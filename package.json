@@ -1,0 +1,17 @@
+{
+  "name": "zerodha-api-mocks",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsc -w && node ./transpiled-build/index.js",
+    "build": "tsc"
+  },
+  "author": "Zameer Ansari <zameeramir@gmail.com> (https://nordible.com)",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^12.12.2",
+    "json-server": "^0.15.1",
+    "tslint-config-airbnb": "^5.11.2"
+  }
+}
