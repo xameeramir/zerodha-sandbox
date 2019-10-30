@@ -1,4 +1,4 @@
-# zerodha-mock-apis
+# zerodha-sandbox
 This repository is the sandbox code for testing Zerodha APIs
 
 ## Collaborations welcome
