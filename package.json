@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "tsc -w && node ./transpiled-build/index.js",
+    "start": "tsc && node ./transpiled-build/index.js",
     "build": "tsc"
   },
   "author": "Zameer Ansari <zameeramir@gmail.com> (https://nordible.com)",
