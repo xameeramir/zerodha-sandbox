@@ -2,8 +2,11 @@ import { POSTSessionToken, DELETESessionToken } from "./User/session-token";
 import { GETUserProfile } from "./User/user-profile";
 import { GETUserMarginSegments } from "./User/user-margins-segment";
 import { POSTOrderVariety, PUTOrderVariety, DELETEOrderVariety } from './Orders/orders-variety';
-import { GETOrders, GETOrderById } from './Orders/orders';
+import { GETOrders, GETOrderById, GETOrderByIdTrades } from './Orders/orders';
 import { GETTrades } from './Orders/trades';
+import { GETHoldings } from './Portfolio/holdings';
+import { GETPositions } from './Portfolio/positions';
+import { PUTPositions } from './Portfolio/positions';
 
 const UnderContruction = (request: any, response: any) => {
     response.status(503).jsonp({
@@ -29,9 +32,9 @@ export const router = (server: any) => {
     server.get('/orders/:order_id/trades', GETOrderByIdTrades);
 
     // Portfolio
-    server.get('/portfolio/holdings', UnderContruction);
-    server.get('/portfolio/positions', UnderContruction);
-    server.put('/portfolio/positions', UnderContruction);
+    server.get('/portfolio/holdings', GETHoldings);
+    server.get('/portfolio/positions', GETPositions);
+    server.put('/portfolio/positions', PUTPositions);
 
     // Market quotes and instruments
     server.get('/instruments', UnderContruction);
