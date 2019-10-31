@@ -1,7 +1,9 @@
 import { POSTSessionToken, DELETESessionToken } from "./User/session-token";
 import { GETUserProfile } from "./User/user-profile";
 import { GETUserMarginSegments } from "./User/user-margins-segment";
-import { POSTOrderVariety } from './Orders/orders-variety';
+import { POSTOrderVariety, PUTOrderVariety, DELETEOrderVariety } from './Orders/orders-variety';
+import { GETOrders, GETOrderById } from './Orders/orders';
+import { GETTrades } from './Orders/trades';
 
 const UnderContruction = (request: any, response: any) => {
     response.status(503).jsonp({
@@ -19,12 +21,12 @@ export const router = (server: any) => {
 
     // Orders routes
     server.post('/orders/:variety', POSTOrderVariety);
-    server.put('/orders/:variety/:order_id', UnderContruction);
-    server.delete('/orders/:variety/:order_id', UnderContruction);
-    server.get('/orders', UnderContruction);
-    server.get('/orders/:order_id', UnderContruction);
-    server.get('/trades', UnderContruction);
-    server.get('/orders/:order_id/trades', UnderContruction);
+    server.put('/orders/:variety/:order_id', PUTOrderVariety);
+    server.delete('/orders/:variety/:order_id', DELETEOrderVariety);
+    server.get('/orders', GETOrders);
+    server.get('/orders/:order_id', GETOrderById);
+    server.get('/trades', GETTrades);
+    server.get('/orders/:order_id/trades', GETOrderByIdTrades);
 
     // Portfolio
     server.get('/portfolio/holdings', UnderContruction);

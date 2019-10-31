@@ -1,0 +1,24 @@
+export const GETTrades = (request: any, response: any) => {
+    response.status(200).jsonp({
+        "COLLABORATION-NEEDED": "Please contibute the request body handling logic https://github.com/nordible/zerodha-sandbox/pulls",
+        "status": "success",
+        "data": [{
+            "trade_id": "159918",
+            "order_id": "151220000000000",
+            "exchange_order_id": "511220371736111",
+    
+            "tradingsymbol": "ACC",
+            "exchange": "NSE",
+            "instrument_token": "22",
+    
+            "transaction_type": "BUY",
+            "product": "MIS",
+            "average_price": 100.98,
+            "quantity": 10,
+    
+            "fill_timestamp": "2015-12-20 15:01:44",
+            "exchange_timestamp": "2015-12-20 15:01:43"
+    
+        }]
+    });
+}
