@@ -7,7 +7,7 @@ const port = process.env.PORT || 3000;
 router(server);
 
 const path = require('path');
-const publicFolder = path.join(__dirname, '../public');
+const publicFolder = path.join(__dirname, '../');
 server.get('/', function (req: any, res: any) {
     res.sendFile(path.join(publicFolder, 'index.html'));
 });
