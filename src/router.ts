@@ -1,6 +1,7 @@
 import { POSTSessionToken, DELETESessionToken } from "./User/session-token";
 import { GETUserProfile } from "./User/user-profile";
 import { GETUserMarginSegments } from "./User/user-margins-segment";
+import { POSTOrderVariety } from './Orders/orders-variety';
 
 const UnderContruction = (request: any, response: any) => {
     response.status(503).jsonp({
@@ -17,7 +18,7 @@ export const router = (server: any) => {
     server.delete('/session/token', DELETESessionToken);
 
     // Orders routes
-    server.post('/orders/:variety', UnderContruction);
+    server.post('/orders/:variety', POSTOrderVariety);
     server.put('/orders/:variety/:order_id', UnderContruction);
     server.delete('/orders/:variety/:order_id', UnderContruction);
     server.get('/orders', UnderContruction);
