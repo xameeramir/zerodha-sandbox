@@ -14,5 +14,10 @@ server.get('/', function (req: any, res: any) {
 server.use('/', express.static(publicFolder));
 
 server.listen(port, () => {
-    console.log(`Server is running at PORT ${port}`);
+    
+    console.log(`
+Server is running at PORT ${port}\n
+Free sandbox for testing Zerodha's Kite and Coin APIs\n
+Learn more https://nordible.com/zerodha-sandbox/\n
+\u00a9 nordible ${new Date().getFullYear()}`);
 });

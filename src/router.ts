@@ -14,6 +14,7 @@ import { POSTMFOrders, DELETEMFOrderById, GETMFOrders, GETMFOrdersById} from './
 import { POSTMFSips, PUTMFSipsByOrderId, DELETEMFSipsByOrderId, GETMFSips, GETMFSipsByOrderId } from "./MutualFunds/sips";
 import { GETMFHoldings } from "./MutualFunds/holdings";
 import { GETMFInstruments } from "./MutualFunds/instruments";
+import { DELETEGTTtriggerById, PUTGTTtriggerById, GETGTTtriggerById, GETGTTtrigger, POSTGTTtrigger } from "./GTT/triggers";
 
 const UnderContruction = (request: any, response: any) => {
     response.status(503).jsonp({
@@ -67,11 +68,11 @@ export const router = (server: any) => {
     server.get('/mf/instruments', GETMFInstruments);
 
     // GTT - Good Till Triggered orders
-    server.post('/gtt/triggers', UnderContruction);
-    server.get('/gtt/triggers', UnderContruction);
-    server.get('/gtt/triggers/:id', UnderContruction);
-    server.put('/gtt/triggers/:id', UnderContruction);
-    server.delete('/gtt/triggers/:id', UnderContruction);
+    server.post('/gtt/triggers', POSTGTTtrigger);
+    server.get('/gtt/triggers', GETGTTtrigger);
+    server.get('/gtt/triggers/:id', GETGTTtriggerById);
+    server.put('/gtt/triggers/:id', PUTGTTtriggerById);
+    server.delete('/gtt/triggers/:id', DELETEGTTtriggerById);
 
 
 }
