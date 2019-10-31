@@ -1,6 +1,24 @@
 # zerodha-sandbox
 This repository is the sandbox code for testing Zerodha APIs
 
+## Run it locally
+
+* Clone the repository
+
+`git clone https://github.com/nordible/zerodha-sandbox.git`
+
+* Go to the project directory
+
+`cd zerodha-sandbox`
+
+* Install npm packages
+
+`npm i`
+
+* Execute
+
+`npm start`
+
 ## Collaborations welcome
 Code changes via [pull requests](https://github.com/nordible/zerodha-mock-apis/pulls) are welcome!
 
