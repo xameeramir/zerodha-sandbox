@@ -10,6 +10,7 @@ import { PUTPositions } from './Portfolio/positions';
 import { GetInstruments, GetInstrumentsByExchange } from './Instruments/instruments';
 import { GetQuotes, GetQuotesOHLC, GetQuotesLTP } from './Quotes/quotes';
 import { GETCandleData } from './HistoricalData/candle-data';
+import { POSTMFOrders, DELETEMFOrderById, GETMFOrders, GETMFOrdersById} from './MutualFunds/orders';
 
 const UnderContruction = (request: any, response: any) => {
     response.status(503).jsonp({
@@ -50,10 +51,10 @@ export const router = (server: any) => {
     server.get('/instruments/historical/:instrument_token/:interval', GETCandleData);
 
     // Mutual funds
-    server.post('/mf/orders', UnderContruction);
-    server.delete('/mf/orders/:order_id', UnderContruction);
-    server.get('/mf/orders', UnderContruction);
-    server.get('/mf/orders/:order_id', UnderContruction);
+    server.post('/mf/orders', POSTMFOrders);
+    server.delete('/mf/orders/:order_id', DELETEMFOrderById);
+    server.get('/mf/orders', GETMFOrders);
+    server.get('/mf/orders/:order_id', GETMFOrdersById);
     server.post('/mf/sips', UnderContruction);
     server.put('/mf/sips/:order_id', UnderContruction);
     server.delete('/mf/sips/:order_id', UnderContruction);
