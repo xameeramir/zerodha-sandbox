@@ -12,6 +12,8 @@ import { GetQuotes, GetQuotesOHLC, GetQuotesLTP } from './Quotes/quotes';
 import { GETCandleData } from './HistoricalData/candle-data';
 import { POSTMFOrders, DELETEMFOrderById, GETMFOrders, GETMFOrdersById} from './MutualFunds/orders';
 import { POSTMFSips, PUTMFSipsByOrderId, DELETEMFSipsByOrderId, GETMFSips, GETMFSipsByOrderId } from "./MutualFunds/sips";
+import { GETMFHoldings } from "./MutualFunds/holdings";
+import { GETMFInstruments } from "./MutualFunds/instruments";
 
 const UnderContruction = (request: any, response: any) => {
     response.status(503).jsonp({
@@ -61,8 +63,8 @@ export const router = (server: any) => {
     server.delete('/mf/sips/:order_id', DELETEMFSipsByOrderId);
     server.get('/mf/sips/', GETMFSips);
     server.get('/mf/sips/:order_id', GETMFSipsByOrderId);
-    server.get('/mf/holdings', UnderContruction);
-    server.get('/mf/instruments', UnderContruction);
+    server.get('/mf/holdings', GETMFHoldings);
+    server.get('/mf/instruments', GETMFInstruments);
 
     // GTT - Good Till Triggered orders
     server.post('/gtt/triggers', UnderContruction);
