@@ -11,6 +11,7 @@ import { GetInstruments, GetInstrumentsByExchange } from './Instruments/instrume
 import { GetQuotes, GetQuotesOHLC, GetQuotesLTP } from './Quotes/quotes';
 import { GETCandleData } from './HistoricalData/candle-data';
 import { POSTMFOrders, DELETEMFOrderById, GETMFOrders, GETMFOrdersById} from './MutualFunds/orders';
+import { POSTMFSips, PUTMFSipsByOrderId, DELETEMFSipsByOrderId, GETMFSips, GETMFSipsByOrderId } from "./MutualFunds/sips";
 
 const UnderContruction = (request: any, response: any) => {
     response.status(503).jsonp({
@@ -55,11 +56,11 @@ export const router = (server: any) => {
     server.delete('/mf/orders/:order_id', DELETEMFOrderById);
     server.get('/mf/orders', GETMFOrders);
     server.get('/mf/orders/:order_id', GETMFOrdersById);
-    server.post('/mf/sips', UnderContruction);
-    server.put('/mf/sips/:order_id', UnderContruction);
-    server.delete('/mf/sips/:order_id', UnderContruction);
-    server.get('/mf/sips/', UnderContruction);
-    server.get('/mf/sips/:order_id', UnderContruction);
+    server.post('/mf/sips', POSTMFSips);
+    server.put('/mf/sips/:order_id', PUTMFSipsByOrderId);
+    server.delete('/mf/sips/:order_id', DELETEMFSipsByOrderId);
+    server.get('/mf/sips/', GETMFSips);
+    server.get('/mf/sips/:order_id', GETMFSipsByOrderId);
     server.get('/mf/holdings', UnderContruction);
     server.get('/mf/instruments', UnderContruction);
 
