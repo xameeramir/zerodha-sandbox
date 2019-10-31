@@ -9,6 +9,7 @@ const UnderContruction = (request: any, response: any) => {
 }
 
 export const router = (server: any) => {
+
     // User routes
     server.post('/session/token', POSTSessionToken);
     server.post('/user/profile', GETUserProfile);
@@ -59,5 +60,5 @@ export const router = (server: any) => {
     server.put('/gtt/triggers/:id', UnderContruction);
     server.delete('/gtt/triggers/:id', UnderContruction);
 
-    
+
 }
