@@ -7,6 +7,8 @@ import { GETTrades } from './Orders/trades';
 import { GETHoldings } from './Portfolio/holdings';
 import { GETPositions } from './Portfolio/positions';
 import { PUTPositions } from './Portfolio/positions';
+import { GetInstruments, GetInstrumentsByExchange } from './Instruments/instruments';
+import { GetQuotes, GetQuotesOHLC, GetQuotesLTP } from './Quotes/quotes';
 
 const UnderContruction = (request: any, response: any) => {
     response.status(503).jsonp({
@@ -37,11 +39,11 @@ export const router = (server: any) => {
     server.put('/portfolio/positions', PUTPositions);
 
     // Market quotes and instruments
-    server.get('/instruments', UnderContruction);
-    server.get('/instruments/:exchange', UnderContruction);
-    server.get('/quote', UnderContruction);
-    server.get('/quote/ohlc', UnderContruction);
-    server.get('/quote/ltp', UnderContruction);
+    server.get('/instruments', GetInstruments);
+    server.get('/instruments/:exchange', GetInstrumentsByExchange);
+    server.get('/quote', GetQuotes);
+    server.get('/quote/ohlc', GetQuotesOHLC);
+    server.get('/quote/ltp', GetQuotesLTP);
 
     // Historical candle data
     server.get('/instruments/historical/:instrument_token/:interval', UnderContruction);
