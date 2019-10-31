@@ -1,5 +1,5 @@
 # zerodha-sandbox
-This repository is the sandbox code for testing Zerodha APIs
+This repository is the code for the [Free Zerodha APIs sandbox environment](https://nordible.com/zerodha-sandbox/) provided by nordible
 
 ## Run it locally
 
@@ -19,8 +19,8 @@ This repository is the sandbox code for testing Zerodha APIs
 
 `npm start`
 
-## Collaborations welcome
-Code changes via [pull requests](https://github.com/nordible/zerodha-mock-apis/pulls) are welcome!
+## Collaborations are most welcome!
+Collaborations [pull requests](https://github.com/nordible/zerodha-mock-apis/pulls) are welcome!
 
 ## Bugs and Issues
 
