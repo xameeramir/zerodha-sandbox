@@ -1,6 +1,6 @@
 export const GETUserMarginSegments = (request: any, response: any) => {
     response.status(200).jsonp({
-        "COLLABORATION-NEEDED": "ADD THE SEGMENT HANDLING LOGIC",
+        "COLLABORATION-NEEDED": "Please contibute the segment handling logic https://github.com/nordible/zerodha-sandbox/pulls",
         "status": "success",
         "data": {
             "equity": {

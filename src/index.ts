@@ -1,7 +1,8 @@
 import { router } from "./router";
 
+const express = require('express')
 const jsonServer = require('json-server')
-const server = jsonServer.create()
+const server = express()
 const middlewares = jsonServer.defaults()
 const port = process.env.PORT || 3000
 
