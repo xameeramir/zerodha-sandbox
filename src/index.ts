@@ -3,6 +3,7 @@ import { router } from "./router";
 const express = require('express');
 const server = express();
 const port = process.env.PORT || 3000;
+const cors = require('cors');
 
 router(server);
 
@@ -13,8 +14,10 @@ server.get('/', function (req: any, res: any) {
 });
 server.use('/', express.static(publicFolder));
 
+server.use(cors());
+
 server.listen(port, () => {
-    
+
     console.log(`
 Mock server is running at PORT ${port}\n
 Free sandbox for testing Zerodha's Kite and Coin APIs\n
