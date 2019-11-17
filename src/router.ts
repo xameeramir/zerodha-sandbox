@@ -27,6 +27,7 @@ export const router = (server: any) => {
     // User routes
     server.post('/session/token', POSTSessionToken);
     server.post('/user/profile', GETUserProfile);
+    server.get('user/margins/', GETUserMarginSegments);
     server.get('user/margins/:segment', GETUserMarginSegments);
     server.delete('/session/token', DELETESessionToken);
 
