@@ -4,9 +4,9 @@ export const GETUserProfile = (request: any, response: any) => {
         "status": "success",
         "data": {
             "user_type": "investor",
-            "email": "kite@kite.trade",
-            "user_name": "Kite Connect",
-            "user_shortname": "Kite",
+            "email": "info@nordible.com",
+            "user_name": "Nordible Software",
+            "user_shortname": "Nordible",
             "broker": "ZERODHA",
             "exchanges": [
                 "MCX",
