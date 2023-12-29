@@ -1,53 +1,58 @@
-export const GETPositions = (request: any, response: any) => {
-    response.status(200).jsonp({
-        "status": "success",
-        "data": {
-          "net": [{
-            "tradingsymbol": "NIFTY15DEC9500CE",
-            "exchange": "NFO",
-            "instrument_token": 41453,
-            "product": "NRML",
-      
-            "quantity": -100,
-            "overnight_quantity": -100,
-            "multiplier": 1,
-      
-            "average_price": 3.475,
-            "close_price": 0.75,
-            "last_price": 0.75,
-            "value": 75.0,
-            "pnl": 272.5,
-            "m2m": 0.0,
-            "unrealised": 0.0,
-            "realised": 0.0,
-      
-            "buy_quantity": 0,
-            "buy_price": 0,
-            "buy_value": 0.0,
-            "buy_m2m": 0.0,
-      
-            "day_buy_quantity": 0,
-            "day_buy_price": 0,
-            "day_buy_value": 0.0,
-      
-            "day_sell_quantity": 0,
-            "day_sell_price": 0,
-            "day_sell_value": 0.0,
-      
-            "sell_quantity": 100,
-            "sell_price": 3.475,
-            "sell_value": 347.5,
-            "sell_m2m": 75.0
-          }],
-          "day": []
-        }
-      });
-}
+const faker = require('faker');
 
+// Function to generate random positions data for GETPositions
+const generateRandomPositionsData = (): any => {
+  const data = {
+    "net": [{
+      "tradingsymbol": faker.random.alphaNumeric(16),
+      "exchange": "NFO",
+      "instrument_token": faker.random.number(),
+      "product": "NRML",
+      "quantity": faker.random.number({ min: -100, max: 100 }),
+      "overnight_quantity": faker.random.number({ min: -100, max: 100 }),
+      "multiplier": 1,
+      "average_price": parseFloat(faker.finance.amount()),
+      "close_price": parseFloat(faker.finance.amount()),
+      "last_price": parseFloat(faker.finance.amount()),
+      "value": parseFloat(faker.finance.amount()),
+      "pnl": parseFloat(faker.finance.amount()),
+      "m2m": parseFloat(faker.finance.amount()),
+      "unrealised": parseFloat(faker.finance.amount()),
+      "realised": parseFloat(faker.finance.amount()),
+      "buy_quantity": faker.random.number(),
+      "buy_price": parseFloat(faker.finance.amount()),
+      "buy_value": parseFloat(faker.finance.amount()),
+      "buy_m2m": parseFloat(faker.finance.amount()),
+      "day_buy_quantity": faker.random.number(),
+      "day_buy_price": parseFloat(faker.finance.amount()),
+      "day_buy_value": parseFloat(faker.finance.amount()),
+      "day_sell_quantity": faker.random.number(),
+      "day_sell_price": parseFloat(faker.finance.amount()),
+      "day_sell_value": parseFloat(faker.finance.amount()),
+      "sell_quantity": faker.random.number(),
+      "sell_price": parseFloat(faker.finance.amount()),
+      "sell_value": parseFloat(faker.finance.amount()),
+      "sell_m2m": parseFloat(faker.finance.amount())
+    }],
+    "day": []
+  };
+
+  return data;
+};
+
+// Function to handle GET request for GETPositions
+export const GETPositions = (request: any, response: any) => {
+  const randomPositionsData = generateRandomPositionsData();
+  response.status(200).jsonp({
+    "status": "success",
+    "data": randomPositionsData,
+  });
+};
+
+// Function to handle PUT request for PUTPositions
 export const PUTPositions = (request: any, response: any) => {
-    response.status(200).jsonp({
-        "COLLABORATION-NEEDED": "Please contibute the request body handling logic https://github.com/nordible/zerodha-sandbox/pulls",
-        "status": "success",
-        "data": true
-      });
-}
+  response.status(200).jsonp({
+    "status": "success",
+    "data": true
+  });
+};

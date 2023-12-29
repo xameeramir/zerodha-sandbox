@@ -1,156 +1,126 @@
+const faker = require('faker');
+
+// Function to generate random orders data
+const generateRandomOrders = (count: number): any[] => {
+  const orders = [];
+  for (let i = 0; i < count; i++) {
+    const order = {
+      order_id: faker.random.number().toString(),
+      parent_order_id: faker.random.number().toString(),
+      exchange_order_id: null,
+      placed_by: faker.random.alphaNumeric(6),
+      variety: 'regular',
+      status: faker.random.arrayElement(['REJECTED', 'PUT ORDER REQ RECEIVED', 'VALIDATION PENDING']), // Random status
+
+      tradingsymbol: faker.random.alphaNumeric(6),
+      exchange: 'NSE',
+      instrument_token: faker.random.number(),
+      transaction_type: 'BUY',
+      order_type: 'MARKET',
+      product: 'NRML',
+      validity: 'DAY',
+
+      price: parseFloat(faker.finance.amount()),
+      quantity: faker.random.number(),
+      trigger_price: parseFloat(faker.finance.amount()),
+
+      average_price: parseFloat(faker.finance.amount()),
+      pending_quantity: faker.random.number(),
+      filled_quantity: faker.random.number(),
+      disclosed_quantity: faker.random.number(),
+      market_protection: faker.random.number(),
+
+      order_timestamp: faker.date.past().toISOString(),
+      exchange_timestamp: null,
+
+      status_message: faker.lorem.sentence(),
+      tag: null,
+    };
+    orders.push(order);
+  }
+  return orders;
+};
+
+// Function to handle GET requests for orders
 export const GETOrders = (request: any, response: any) => {
-    response.status(200).jsonp({
-        "COLLABORATION-NEEDED": "Please contibute the request body handling logic https://github.com/nordible/zerodha-sandbox/pulls",
-        "status": "success",
-        "data": [{
-            "order_id": "151220000000000",
-            "parent_order_id": "151210000000000",
-            "exchange_order_id": null,
-            "placed_by": "AB0012",
-            "variety": "regular",
-            "status": "REJECTED",
+  const randomOrders = generateRandomOrders(3); // Generating 3 random orders
+  response.status(200).jsonp({
+    "status": "success",
+    "data": randomOrders,
+  });
+};
 
-            "tradingsymbol": "ACC",
-            "exchange": "NSE",
-            "instrument_token": 22,
-            "transaction_type": "BUY",
-            "order_type": "MARKET",
-            "product": "NRML",
-            "validity": "DAY",
+// Function to generate random data for GETOrderById
+const generateRandomOrderByIdData = (): any[] => {
+  const data = [
+    {
+      average_price: faker.finance.amount(),
+      cancelled_quantity: faker.random.number(),
+      disclosed_quantity: faker.random.number(),
+      exchange: 'NSE',
+      exchange_order_id: null,
+      exchange_timestamp: null,
+      filled_quantity: faker.random.number(),
+      instrument_token: faker.random.number(),
+      market_protection: faker.random.number(),
+      order_id: faker.random.number().toString(),
+      order_timestamp: faker.date.past().toISOString(),
+      order_type: 'SL',
+      parent_order_id: null,
+      pending_quantity: faker.random.number(),
+      placed_by: faker.random.alphaNumeric(6),
+      price: faker.finance.amount(),
+      product: 'MIS',
+      quantity: faker.random.number(),
+      status: 'PUT ORDER REQ RECEIVED',
+      status_message: null,
+      tag: null,
+      tradingsymbol: faker.random.alphaNumeric(6),
+      transaction_type: 'BUY',
+      trigger_price: faker.finance.amount(),
+      validity: 'DAY',
+      variety: 'regular'
+    },
+    // ... Additional data objects can be added here following the same structure
+  ];
 
-            "price": 0.0,
-            "quantity": 75,
-            "trigger_price": 0.0,
+  return data;
+};
 
-            "average_price": 0.0,
-            "pending_quantity": 0,
-            "filled_quantity": 0,
-            "disclosed_quantity": 0,
-            "market_protection": 0,
-
-            "order_timestamp": "2015-12-20 15:01:43",
-            "exchange_timestamp": null,
-
-            "status_message": "RMS:Margin Exceeds, Required:0, Available:0",
-            "tag": null
-        }]
-    });
-}
-
+// Function to handle GET request for GETOrderById
 export const GETOrderById = (request: any, response: any) => {
-    response.status(200).jsonp({
-        "COLLABORATION-NEEDED": "Please contibute the request body handling logic https://github.com/nordible/zerodha-sandbox/pulls",
-        "status": "success",
-        "data": [
-            {
-                "average_price": 0,
-                "cancelled_quantity": 0,
-                "disclosed_quantity": 0,
-                "exchange": "NSE",
-                "exchange_order_id": null,
-                "exchange_timestamp": null,
-                "filled_quantity": 0,
-                "instrument_token": 1,
-                "market_protection": 0,
-                "order_id": "171222000539943",
-                "order_timestamp": "2017-12-22 10:36:09",
-                "order_type": "SL",
-                "parent_order_id": null,
-                "pending_quantity": 1,
-                "placed_by": "ZQXXXX",
-                "price": 130,
-                "product": "MIS",
-                "quantity": 1,
-                "status": "PUT ORDER REQ RECEIVED",
-                "status_message": null,
-                "tag": null,
-                "tradingsymbol": "ASHOKLEY",
-                "transaction_type": "BUY",
-                "trigger_price": 128,
-                "validity": "DAY",
-                "variety": "regular"
-            },
-            {
-                "average_price": 0,
-                "cancelled_quantity": 0,
-                "disclosed_quantity": 0,
-                "exchange": "NSE",
-                "exchange_order_id": null,
-                "exchange_timestamp": null,
-                "filled_quantity": 0,
-                "instrument_token": 54273,
-                "market_protection": 0,
-                "order_id": "171222000539943",
-                "order_timestamp": "2017-12-22 10:36:09",
-                "order_type": "SL",
-                "parent_order_id": null,
-                "pending_quantity": 1,
-                "placed_by": "ZQXXXX",
-                "price": 130,
-                "product": "MIS",
-                "quantity": 1,
-                "status": "VALIDATION PENDING",
-                "status_message": null,
-                "tag": null,
-                "tradingsymbol": "ASHOKLEY",
-                "transaction_type": "BUY",
-                "trigger_price": 128,
-                "validity": "DAY",
-                "variety": "regular"
-            },
-            {
-                "average_price": 0,
-                "cancelled_quantity": 0,
-                "disclosed_quantity": 0,
-                "exchange": "NSE",
-                "exchange_order_id": null,
-                "exchange_timestamp": null,
-                "filled_quantity": 0,
-                "instrument_token": 54273,
-                "market_protection": 0,
-                "order_id": "171222000539943",
-                "order_timestamp": "2017-12-22 10:36:09",
-                "order_type": "SL",
-                "parent_order_id": null,
-                "pending_quantity": 0,
-                "placed_by": "ZQXXXX",
-                "price": 130,
-                "product": "MIS",
-                "quantity": 1,
-                "status": "REJECTED",
-                "status_message": "RMS:Rule: Check circuit limit including square off order exceeds  for entity account-DH0490 across exchange across segment across product ",
-                "tag": null,
-                "tradingsymbol": "ASHOKLEY",
-                "transaction_type": "BUY",
-                "trigger_price": 128,
-                "validity": "DAY",
-                "variety": "regular"
-            }
-        ]
-    });
-}
+  const randomOrderByIdData = generateRandomOrderByIdData();
+  response.status(200).jsonp({
+    "status": "success",
+    "data": randomOrderByIdData,
+  });
+};
 
+// Function to generate random data for GETOrderByIdTrades
+const generateRandomOrderByIdTradesData = (): any[] => {
+  const data = [{
+    trade_id: faker.random.number().toString(),
+    order_id: faker.random.number().toString(),
+    exchange_order_id: faker.random.number().toString(),
+    tradingsymbol: faker.random.alphaNumeric(6),
+    exchange: 'NSE',
+    instrument_token: faker.random.number(),
+    transaction_type: 'BUY',
+    product: 'MIS',
+    average_price: parseFloat(faker.finance.amount()),
+    quantity: faker.random.number(),
+    fill_timestamp: faker.date.past().toISOString(),
+    exchange_timestamp: faker.date.past().toISOString()
+  }];
+  
+  return data;
+};
+
+// Function to handle GET request for GETOrderByIdTrades
 export const GETOrderByIdTrades = (request: any, response: any) => {
-    response.status(200).jsonp({
-        "COLLABORATION-NEEDED": "Please contibute the request body handling logic https://github.com/nordible/zerodha-sandbox/pulls",
-        "status": "success",
-        "data": [{
-            "trade_id": "159918",
-            "order_id": "151220000000000",
-            "exchange_order_id": "511220371736111",
-
-            "tradingsymbol": "ACC",
-            "exchange": "NSE",
-            "instrument_token": "22",
-
-            "transaction_type": "BUY",
-            "product": "MIS",
-            "average_price": 100.98,
-            "quantity": 10,
-
-            "fill_timestamp": "2015-12-20 15:01:44",
-            "exchange_timestamp": "2015-12-20 15:01:43"
-
-        }]
-    });
-}
+  const randomOrderByIdTradesData = generateRandomOrderByIdTradesData();
+  response.status(200).jsonp({
+    "status": "success",
+    "data": randomOrderByIdTradesData,
+  });
+};

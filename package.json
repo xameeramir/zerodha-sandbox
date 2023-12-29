@@ -13,8 +13,12 @@
     "@types/node": "^12.12.2",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "faker": "^5.5.3",
     "json-server": "^0.15.1",
     "tslint-config-airbnb": "^5.11.2",
     "typescript": "^3.6.4"
+  },
+  "devDependencies": {
+    "@types/faker": "^6.6.9"
   }
 }
