@@ -7,32 +7,32 @@ const generateRandomQuotesData = (): any => {
       "instrument_token": 41729,
       "timestamp": faker.date.past().toISOString(),
       "last_price": parseFloat(faker.finance.amount()),
-      "last_quantity": faker.random.number(),
+      "last_quantity": faker.datatype.number(),
       "last_trade_time": faker.date.past().toISOString(),
       "average_price": parseFloat(faker.finance.amount()),
-      "volume": faker.random.number(),
-      "buy_quantity": faker.random.number(),
-      "sell_quantity": faker.random.number(),
+      "volume": faker.datatype.number(),
+      "buy_quantity": faker.datatype.number(),
+      "sell_quantity": faker.datatype.number(),
       "ohlc": {
         "open": parseFloat(faker.finance.amount()),
         "high": parseFloat(faker.finance.amount()),
         "low": parseFloat(faker.finance.amount()),
         "close": parseFloat(faker.finance.amount())
       },
-      "net_change": faker.random.number(),
-      "oi": faker.random.number(),
-      "oi_day_high": faker.random.number(),
-      "oi_day_low": faker.random.number(),
+      "net_change": faker.datatype.number(),
+      "oi": faker.datatype.number(),
+      "oi_day_high": faker.datatype.number(),
+      "oi_day_low": faker.datatype.number(),
       "depth": {
         "buy": Array.from({ length: 5 }, () => ({
           "price": parseFloat(faker.finance.amount()),
-          "quantity": faker.random.number(),
-          "orders": faker.random.number()
+          "quantity": faker.datatype.number(),
+          "orders": faker.datatype.number()
         })),
         "sell": Array.from({ length: 5 }, () => ({
           "price": parseFloat(faker.finance.amount()),
-          "quantity": faker.random.number(),
-          "orders": faker.random.number()
+          "quantity": faker.datatype.number(),
+          "orders": faker.datatype.number()
         }))
       }
     },
@@ -40,12 +40,12 @@ const generateRandomQuotesData = (): any => {
       "instrument_token": 408065,
       "timestamp": faker.date.past().toISOString(),
       "last_price": parseFloat(faker.finance.amount()),
-      "last_quantity": faker.random.number(),
+      "last_quantity": faker.datatype.number(),
       "last_trade_time": faker.date.past().toISOString(),
       "average_price": parseFloat(faker.finance.amount()),
-      "volume": faker.random.number(),
-      "buy_quantity": faker.random.number(),
-      "sell_quantity": faker.random.number(),
+      "volume": faker.datatype.number(),
+      "buy_quantity": faker.datatype.number(),
+      "sell_quantity": faker.datatype.number(),
       "ohlc": {
         "open": parseFloat(faker.finance.amount()),
         "high": parseFloat(faker.finance.amount()),

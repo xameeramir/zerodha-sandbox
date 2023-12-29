@@ -2,7 +2,7 @@ const faker = require('faker');
 
 // Function to generate random order ID
 const generateRandomOrderID = (): string => {
-  return faker.random.number().toString();
+  return faker.datatype.number().toString();
 };
 
 // Function to handle POST request for POSTOrderVariety
