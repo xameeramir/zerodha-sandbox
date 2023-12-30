@@ -1,5 +1,7 @@
 const faker = require('faker');
 const pool = require('../db');
+const axios = require('axios');
+
 // Function to generate random order ID
 const generateRandomOrderID = (): string => {
   return faker.datatype.number().toString();
@@ -178,4 +180,51 @@ const calculateAndInsertPositions = async (client: any, orderID: any) => {
   }
 };
 
+
+function simulateDelayedPostback(orderId: any) {
+  const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+  setTimeout(() => {
+    const updatedStatusPayload = {
+      user_id: "AB1234",
+      unfilled_quantity: 0,
+      app_id: 1234,
+      order_id: orderId, // Using the provided order ID
+      status: "COMPLETE", // Simulating an updated status as "COMPLETE"
+    };
+    sendPostbackUpdate(updatedStatusPayload);
+  }, fiveMinutes);
+}
+
+// Function to calculate SHA-256 checksum using Web Crypto API
+async function calculateChecksum(orderId: any, orderTimestamp: any, apiSecret: any) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(orderId + orderTimestamp + apiSecret);
+
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(byte => ('00' + byte.toString(16)).slice(-2)).join('');
+
+  return hashHex;
+}
+
+// Function to send a POST request with the payload
+function sendPostbackUpdate(payload: any) {
+  // Your API endpoint URL
+  const apiUrl = 'http://localhost:8000/api/z-postback';
+  const apiSecret = 'your_api_secret'; 
+
+  // Calculate checksum using payload data
+  const { order_id: orderId, order_timestamp: orderTimestamp } = payload;
+  const checksum = calculateChecksum(orderId, orderTimestamp, apiSecret);
+
+  payload.checksum = checksum;
+  axios.post(apiUrl, payload)
+    .then((response: { data: any; }) => {
+      console.log('Postback sent successfully:', response.data);
+    })
+    .catch((error: any) => {
+      console.error('Error sending postback:', error);
+    });
+}
 
