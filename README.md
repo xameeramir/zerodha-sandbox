@@ -3,21 +3,29 @@ This repository is the code for the [Free Zerodha APIs sandbox environment](http
 
 ## Run it locally
 
-* Clone the repository
+1. Clone the repository
 
-`git clone https://github.com/nordible/zerodha-sandbox.git`
+    ```bash
+    git clone https://github.com/nordible/zerodha-sandbox.git
+    ```
 
-* Go to the project directory
+2. Go to the project directory
 
-`cd zerodha-sandbox`
+    ```bash
+    cd zerodha-sandbox
+    ```
 
-* Install npm packages
+3. Install npm packages
 
-`npm i`
+    ```bash
+    npm i
+    ```
 
-* Execute
+4. Execute
 
-`npm start`
+    ```bash
+    npm start
+    ```
 
 ## Docker Deployment (Contribution by Roney Dsilva)
 
