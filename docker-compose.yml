@@ -7,6 +7,10 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - DB_USER=db_user
+      - DB_HOST=postgres
+      - DB_NAME=zerodha_db
+      - DB_PASSWORD=zerodha_password
     depends_on:
       - postgres
   postgres:
