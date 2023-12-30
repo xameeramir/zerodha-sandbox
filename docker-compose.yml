@@ -1,0 +1,26 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - postgres
+  postgres:
+    image: postgres:latest
+    container_name: postgres-container
+    environment:
+      POSTGRES_DB: zerodha_db
+      POSTGRES_USER: db_user
+      POSTGRES_PASSWORD: zerodha_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - zerodha_db_data:/var/lib/postgresql/data
+
+volumes:
+  zerodha_db_data:
+    driver: local

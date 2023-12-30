@@ -2,7 +2,7 @@ import { POSTSessionToken, DELETESessionToken } from "./User/session-token";
 import { GETUserProfile } from "./User/user-profile";
 import { GETUserMarginSegments } from "./User/user-margins-segment";
 import { POSTOrderVariety, PUTOrderVariety, DELETEOrderVariety } from './Orders/orders-variety';
-import { GETOrders, GETOrderById, GETOrderByIdTrades } from './Orders/orders';
+import { GETOrders, GETOrderById, GETOrderByIdTrades, generateAndInsertRandomOrders } from './Orders/orders';
 import { GETTrades } from './Orders/trades';
 import { GETHoldings } from './Portfolio/holdings';
 import { GETPositions } from './Portfolio/positions';
@@ -36,6 +36,7 @@ export const router = (server: any) => {
     server.put('/orders/:variety/:order_id', PUTOrderVariety);
     server.delete('/orders/:variety/:order_id', DELETEOrderVariety);
     server.get('/orders', GETOrders);
+    server.get('/generate-orders', generateAndInsertRandomOrders);
     server.get('/orders/:order_id', GETOrderById);
     server.get('/trades', GETTrades);
     server.get('/orders/:order_id/trades', GETOrderByIdTrades);

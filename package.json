@@ -15,8 +15,10 @@
     "express": "^4.17.1",
     "faker": "^5.5.3",
     "json-server": "^0.15.1",
+    "pg": "^8.11.3",
     "tslint-config-airbnb": "^5.11.2",
-    "typescript": "^3.6.4"
+    "typescript": "^3.6.4",
+    "ws": "^8.16.0"
   },
   "devDependencies": {
     "@types/faker": "^6.6.9"

@@ -1,21 +1,20 @@
 const faker = require('faker');
-
+const pool = require('../db');
 // Function to generate random orders data
-const generateRandomOrders = (count: number): any[] => {
+export const generateRandomOrders = (count: number): any[] => {
   const orders = [];
   for (let i = 0; i < count; i++) {
     const order = {
       order_id: faker.datatype.number().toString(),
       parent_order_id: faker.datatype.number().toString(),
       exchange_order_id: null,
-      placed_by: faker.random.alphaNumeric(6),
+      placed_by: faker.random.arrayElement(['SYSTEM', 'USER']),
       variety: 'regular',
-      status: faker.random.arrayElement(['REJECTED', 'PUT ORDER REQ RECEIVED', 'VALIDATION PENDING']), // Random status
-
+      status: faker.random.arrayElement(['REJECTED', 'ACCEPTED', 'CANCELLED', 'COMPLETE']),
       tradingsymbol: faker.random.alphaNumeric(6),
-      exchange: 'NSE',
+      exchange: faker.random.arrayElement(['NSE', 'BSE']),
       instrument_token: faker.datatype.number(),
-      transaction_type: 'BUY',
+      transaction_type: faker.random.arrayElement(['BUY', 'SELL']),
       order_type: 'MARKET',
       product: 'NRML',
       validity: 'DAY',
@@ -41,13 +40,81 @@ const generateRandomOrders = (count: number): any[] => {
   return orders;
 };
 
-// Function to handle GET requests for orders
-export const GETOrders = (request: any, response: any) => {
-  const randomOrders = generateRandomOrders(3); // Generating 3 random orders
-  response.status(200).jsonp({
-    "status": "success",
-    "data": randomOrders,
-  });
+// Function to generate random orders data and insert into the database
+export const generateAndInsertRandomOrders = async (count: number) => {
+  try {
+    const client = await pool.connect();
+
+    for (let i = 0; i < count; i++) {
+      const order = {
+        order_id: faker.datatype.number().toString(),
+        parent_order_id: faker.datatype.number().toString(),
+        exchange_order_id: null,
+        placed_by: faker.random.arrayElement(['SYSTEM', 'USER']),
+        variety: 'regular',
+        status: faker.random.arrayElement(['REJECTED', 'ACCEPTED', 'CANCELLED', 'COMPLETE']),
+
+        tradingsymbol: faker.random.alphaNumeric(6),
+        exchange: faker.random.arrayElement(['NSE', 'BSE']),
+        instrument_token: faker.datatype.number(),
+        transaction_type: faker.random.arrayElement(['BUY', 'SELL']),
+        order_type: 'MARKET',
+        product: 'NRML',
+        validity: 'DAY',
+
+        price: parseFloat(faker.finance.amount()),
+        quantity: faker.datatype.number(),
+        trigger_price: parseFloat(faker.finance.amount()),
+
+        average_price: parseFloat(faker.finance.amount()),
+        pending_quantity: faker.datatype.number(),
+        filled_quantity: faker.datatype.number(),
+        disclosed_quantity: faker.datatype.number(),
+        market_protection: faker.datatype.number(),
+
+        order_timestamp: faker.date.past().toISOString(),
+        exchange_timestamp: null,
+
+        status_message: faker.lorem.sentence(),
+        tag: null,
+      };
+
+      // Insert the generated order into the database
+      await client.query(`
+        INSERT INTO orders (${Object.keys(order).join(', ')})
+        VALUES (${Object.values(order).map((_, idx) => `$${idx + 1}`).join(', ')})
+      `, Object.values(order));
+    }
+
+    client.release();
+    console.log(`${count} orders inserted into the database.`);
+  } catch (error) {
+    console.error('Error inserting orders into the database:', error);
+  }
+};
+
+// Function to handle GET requests for a specified number of random orders
+export const GETOrders = async (request: any, response: any) => {
+  try {
+    const { count } = request.query; // count is provided as a query parameter
+    const ordersCount = count ? parseInt(count) : 3; // Default to 3 orders if count is not provided or invalid
+    const client = await pool.connect();
+
+    // Fetch specified number of random orders from the database
+    const result = await client.query('SELECT * FROM orders ORDER BY RANDOM() LIMIT $1', [ordersCount]);
+
+    client.release();
+
+    response.status(200).jsonp({
+      "status": "success",
+      "data": result.rows,
+    });
+  } catch (error) {
+    response.status(500).jsonp({
+      "status": "error",
+      "message": "Failed to fetch orders",
+    });
+  }
 };
 
 // Function to generate random data for GETOrderById
@@ -80,20 +147,41 @@ const generateRandomOrderByIdData = (): any[] => {
       trigger_price: faker.finance.amount(),
       validity: 'DAY',
       variety: 'regular'
-    },
-    // ... Additional data objects can be added here following the same structure
+    }
   ];
 
   return data;
 };
 
-// Function to handle GET request for GETOrderById
-export const GETOrderById = (request: any, response: any) => {
-  const randomOrderByIdData = generateRandomOrderByIdData();
-  response.status(200).jsonp({
-    "status": "success",
-    "data": randomOrderByIdData,
-  });
+// Function to handle GET requests for orders by ID
+export const GETOrderById = async (request: any, response: any) => {
+  try {
+    const { orderId } = request.params;
+
+    const client = await pool.connect();
+
+    // Fetch order data from the database based on the orderId
+    const result = await client.query('SELECT * FROM orders WHERE order_id = $1', [orderId]);
+
+    client.release();
+
+    if (result.rows.length > 0) {
+      response.status(200).jsonp({
+        "status": "success",
+        "data": result.rows,
+      });
+    } else {
+      response.status(404).jsonp({
+        "status": "error",
+        "message": "Order not found",
+      });
+    }
+  } catch (error) {
+    response.status(500).jsonp({
+      "status": "error",
+      "message": "Failed to fetch order",
+    });
+  }
 };
 
 // Function to generate random data for GETOrderByIdTrades
