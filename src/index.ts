@@ -148,6 +148,8 @@ createOrdersTable(); // Initialize the orders table when the server starts
             m2m NUMERIC,
             unrealised NUMERIC,
             realised NUMERIC,
+            authorised_quantity NUMERIC DEFAULT 0,
+            authorised_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         `);
@@ -178,17 +180,19 @@ createOrdersTable(); // Initialize the orders table when the server starts
       if (!tableExists.rows[0].exists) {
         // If the table doesn't exist, create the table
         await client.query(`
-          CREATE TABLE IF NOT EXISTS portfolio_holdings (
-            holding_id SERIAL PRIMARY KEY,
-            order_id VARCHAR(50) REFERENCES orders(order_id),
-            average_price NUMERIC,
-            close_price NUMERIC,
-            pnl NUMERIC,
-            day_change NUMERIC,
-            day_change_percentage NUMERIC,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
+        CREATE TABLE IF NOT EXISTS portfolio_holdings (
+          holding_id SERIAL PRIMARY KEY,
+          order_id VARCHAR(50) REFERENCES orders(order_id),
+          average_price NUMERIC,
+          close_price NUMERIC,
+          pnl NUMERIC,
+          day_change NUMERIC,
+          day_change_percentage NUMERIC,
+          authorised_quantity NUMERIC DEFAULT 0,
+          authorised_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
   
         console.log('Portfolio Holdings table created successfully.');
       } else {

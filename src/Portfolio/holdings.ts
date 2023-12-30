@@ -1,12 +1,54 @@
+const pool = require('../db');
 // Function to handle GET request for retrieving holdings from database
 export const GETHoldings = async (request: any, response: any) => {
   try {
     const client = await pool.connect();
-    // Retrieve holdings data from the portfolio_holdings table
-    const holdingsQuery = 'SELECT * FROM portfolio_holdings';
+    // Retrieve specific fields from portfolio_holdings table joined with orders table
+    const holdingsQuery = `
+      SELECT 
+        o.tradingsymbol, 
+        o.exchange, 
+        o.instrument_token, 
+        o.product, 
+        o.price, 
+        o.quantity, 
+        o.average_price, 
+        ph.close_price, 
+        ph.pnl, 
+        ph.day_change, 
+        ph.day_change_percentage 
+      FROM 
+        portfolio_holdings ph 
+      INNER JOIN 
+        orders o ON ph.order_id = o.order_id`;
+
     const holdingsResult = await client.query(holdingsQuery);
 
-    const holdingsData = holdingsResult.rows;
+    const holdingsData = holdingsResult.rows.map((row: any) => ({
+      tradingsymbol: row.tradingsymbol,
+      exchange: row.exchange,
+      instrument_token: row.instrument_token,
+      isin: 0, // Replace with actual logic to calculate
+      product: row.product,
+      price: row.price,
+      quantity: row.quantity,
+      used_quantity: 0, // Replace with actual logic to calculate used_quantity
+      t1_quantity: 0, // Replace with actual logic to calculate t1_quantity
+      realised_quantity: row.quantity, // Assuming this is the same as the quantity
+      authorised_quantity: row.authorised_quantity, 
+      authorised_date: row.authorised_date, 
+      opening_quantity: row.quantity, // Assuming this is the same as the quantity
+      collateral_quantity: 0, // Replace with actual collateral_quantity
+      collateral_type: '', // Replace with actual collateral_type
+      discrepancy: false, // Replace with actual discrepancy logic
+      average_price: row.average_price,
+      last_price: row.close_price, // Assuming close_price is the last_price
+      close_price: row.close_price,
+      pnl: row.pnl,
+      day_change: row.day_change,
+      day_change_percentage: row.day_change_percentage,
+    }));
+
     response.status(200).jsonp({
       "status": "success",
       "data": holdingsData,
