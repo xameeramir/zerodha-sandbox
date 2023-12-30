@@ -58,6 +58,8 @@ export const POSTOrderVariety = async (request: any, response: any) => {
       ]
     );
     client.release();
+    // After inserting the order, call the function to calculate and insert positions
+    await calculateAndInsertPositions(client, orderID);
 
     response.status(200).jsonp({
       "status": "success",
@@ -79,16 +81,15 @@ export const POSTOrderVariety = async (request: any, response: any) => {
 
 export const PUTOrderVariety = async (request: any, response: any) => {
   try {
-    const orderID = request.params.orderId; // Assuming the order ID is passed in the request URL
+    const orderID = request.params.orderId;
     const {
       order_type,
       quantity,
       price,
       trigger_price,
       disclosed_quantity,
-      validity,
-      // other relevant parameters as needed from the request
-    } = request.body; // Assuming request contains the necessary parameters to modify the order
+      validity
+    } = request.body; 
 
     // Update order details in the database
     const client = await pool.connect();
@@ -100,6 +101,8 @@ export const PUTOrderVariety = async (request: any, response: any) => {
     `, [order_type, quantity, price, trigger_price, disclosed_quantity, validity, orderID]);
 
     client.release();
+
+    await calculateAndInsertPositions(client, orderID);
 
     response.status(200).jsonp({
       "status": "success",
@@ -125,3 +128,54 @@ export const DELETEOrderVariety = (request: any, response: any) => {
     }
   });
 };
+
+
+// Function to calculate and insert positions
+const calculateAndInsertPositions = async (client: any, orderID: any) => {
+  try {
+    // Begin a transaction
+    await client.query('BEGIN');
+
+    // Calculate and insert data into positions table for a specific order_id
+    const insertQuery = `
+      INSERT INTO portfolio_positions (
+        order_id,
+        average_price,
+        close_price,
+        value,
+        pnl,
+        m2m,
+        unrealised,
+        realised
+      )
+      SELECT
+        o.order_id,
+        -- Replace with your calculation logic for average_price, close_price, value, pnl, m2m, unrealised, realised
+        AVG(o.price) AS average_price,
+        MAX(o.price) AS close_price,
+        SUM(o.price * o.quantity) AS value,
+        SUM(CASE WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price) ELSE 0 END) AS pnl,
+        SUM(CASE WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price) ELSE 0 END) AS m2m,
+        SUM(CASE WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price) ELSE 0 END) AS unrealised,
+        SUM(CASE WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price) ELSE 0 END) AS realised
+      FROM
+        orders o
+      WHERE
+        o.order_id = $1
+      GROUP BY
+        o.order_id
+    `;
+
+    // Execute the insert query with the specified order_id
+    await client.query(insertQuery, [orderID]);
+
+    // Commit the transaction
+    await client.query('COMMIT');
+
+    console.log(`Positions calculated and inserted for order_id: ${orderID} successfully.`);
+  } catch (error) {
+    console.error(`Error calculating and inserting positions for order_id: ${orderID}`, error);
+  }
+};
+
+
