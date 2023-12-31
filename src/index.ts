@@ -6,15 +6,87 @@ const port = process.env.PORT || 3000;
 const cors = require('cors');
 const pool = require('./db');
 import { generateRandomOrders } from './Orders/orders'
+
+const createUserTableAndInsertData = async () => {
+  try {
+    const client = await pool.connect();
+
+    // Create users table if it doesn't exist
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        user_type VARCHAR(50),
+        email VARCHAR(100),
+        user_name VARCHAR(50),
+        user_shortname VARCHAR(50),
+        broker VARCHAR(50),
+        exchanges TEXT[],
+        products TEXT[],
+        order_types TEXT[],
+        avatar_url VARCHAR(255),
+        api_key VARCHAR(100),
+        access_token VARCHAR(100),
+        public_token VARCHAR(100),
+        enctoken VARCHAR(100),
+        refresh_token VARCHAR(100),
+        silo VARCHAR(50),
+        login_time TIMESTAMP
+      )
+    `);
+
+    // Check if the table already contains data
+    const checkExistingUsers = await client.query('SELECT COUNT(1) FROM users');
+    const existingUsersCount = parseInt(checkExistingUsers.rows[0].count, 10);
+
+    if (existingUsersCount === 0) {
+      // Insert a sample user entry
+      const sampleUserData = {
+        id: 1,
+        user_type: 'individual',
+        email: 'sample@example.com',
+        user_name: 'Sample User',
+        user_shortname: 'Sample',
+        broker: 'ZERODHA',
+        exchanges: ['NSE', 'NFO', 'BFO', 'CDS', 'BSE', 'MCX', 'BCD', 'MF'],
+        products: ['CNC', 'NRML', 'MIS', 'BO', 'CO'],
+        order_types: ['MARKET', 'LIMIT', 'SL', 'SL-M'],
+        avatar_url: 'abc',
+        api_key: 'SampleAPIKey',
+        access_token: 'SampleAccessToken',
+        public_token: 'SamplePublicToken',
+        enctoken: 'SampleEncToken',
+        refresh_token: '',
+        silo: '',
+        login_time: '2021-01-01 16:15:14'
+      };
+
+      // Insert sample user data into the table
+      await client.query(`
+        INSERT INTO users (${Object.keys(sampleUserData).join(', ')})
+        VALUES (${Object.values(sampleUserData).map((_, idx) => `$${idx + 1}`).join(', ')})
+      `, Object.values(sampleUserData));
+
+      console.log('Users table created and sample data inserted successfully.');
+    } else {
+      console.log('Users table already contains data. Skipping creation and insertion.');
+    }
+
+    client.release();
+  } catch (error) {
+    console.error('Error creating users table:', error);
+  }
+};
+
 const createOrdersTable = async () => {
     try {
       const client = await pool.connect();
         // If no entries exist, create the table and generate random orders
         await client.query(`
           CREATE TABLE IF NOT EXISTS orders (
-            order_id VARCHAR(50) PRIMARY KEY,
-            parent_order_id VARCHAR(50),
-            exchange_order_id VARCHAR(50),
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id),
+            parent_order_id INTEGER,
+            exchange_order_id INTEGER,
             placed_by VARCHAR(50),
             variety VARCHAR(50),
             status VARCHAR(50),
@@ -64,8 +136,6 @@ const createOrdersTable = async () => {
     }
   };
   
-createOrdersTable(); // Initialize the orders table when the server starts
-
   const createGTTTriggersTable = async () => {
     try {
       const client = await pool.connect();
@@ -124,8 +194,6 @@ createOrdersTable(); // Initialize the orders table when the server starts
       console.error('Error creating GTT Triggers table:', error);
     }
   };
-  
-  createGTTTriggersTable(); // Initialize the GTT Triggers table when the server starts
 
   const createPortfolioPositionsTable = async () => {
     try {
@@ -140,7 +208,7 @@ createOrdersTable(); // Initialize the orders table when the server starts
         await client.query(`
           CREATE TABLE IF NOT EXISTS portfolio_positions (
             position_id SERIAL PRIMARY KEY,
-            order_id VARCHAR(50) REFERENCES orders(order_id),
+            order_id INTEGER REFERENCES orders(id),
             average_price NUMERIC,
             close_price NUMERIC,
             value NUMERIC,
@@ -165,10 +233,6 @@ createOrdersTable(); // Initialize the orders table when the server starts
     }
   };
   
-  
-  
-  createPortfolioPositionsTable(); // Initialize the Portfolio Positions table
-
   const createPortfolioHoldingsTable = async () => {
     try {
       const client = await pool.connect();
@@ -182,7 +246,7 @@ createOrdersTable(); // Initialize the orders table when the server starts
         await client.query(`
         CREATE TABLE IF NOT EXISTS portfolio_holdings (
           holding_id SERIAL PRIMARY KEY,
-          order_id VARCHAR(50) REFERENCES orders(order_id),
+          order_id INTEGER REFERENCES orders(id),
           average_price NUMERIC,
           close_price NUMERIC,
           pnl NUMERIC,
@@ -205,25 +269,25 @@ createOrdersTable(); // Initialize the orders table when the server starts
     }
   };
   
-  
-  createPortfolioHoldingsTable(); // Initialize the Portfolio Holdings table when the server starts
-
-server.use(express.json());
-router(server);
-
-const path = require('path');
-const publicFolder = path.join(__dirname, '../');
-server.get('/', function (req: any, res: any) {
-    res.sendFile(path.join(publicFolder, 'index.html'));
-});
-server.use('/', express.static(publicFolder));
-
-server.use(cors());
-server.listen(port, () => {
-
-    console.log(`
-Mock server is running at PORT ${port}\n
-Free sandbox for testing Zerodha's Kite and Coin APIs\n
-Learn more https://nordible.com/zerodha-sandbox/\n
-\u00a9 nordible ${new Date().getFullYear()}`);
-});
+// Call functions in a sequential order to create tables
+createUserTableAndInsertData()
+  .then(() => createOrdersTable())
+  .then(() => createPortfolioPositionsTable())
+  .then(() => createPortfolioHoldingsTable())
+  .then(() => createGTTTriggersTable())
+  .then(() => {
+    server.use(express.json());
+    router(server);
+    const path = require('path');
+    const publicFolder = path.join(__dirname, '../');
+    server.use(express.static(path.join(__dirname, '../')));
+    server.get('/', (req: any, res: any) => {
+      res.sendFile(path.join(__dirname, '../index.html'));
+    });
+    server.use('/', express.static(publicFolder));
+    server.use(cors());
+    server.listen(port, () => {
+      console.log(`Mock server is running at PORT ${port}\nFree sandbox for testing Zerodha's Kite and Coin APIs\nLearn more https://nordible.com/zerodha-sandbox/\n\u00a9 nordible ${new Date().getFullYear()}`);
+    });
+  })
+  .catch((err) => console.error('Error:', err));

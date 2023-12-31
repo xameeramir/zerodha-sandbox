@@ -3,27 +3,54 @@ const pool = require('../db');
 // Function to handle GET request for retrieving positions from database
 export const GETPositions = async (request: any, response: any) => {
   try {
+    const { authorization } = request.headers;
+
+    // Extract user_id from the authorization header or token
+    const tokenParts = authorization.split(' ');
+    const [apiKey, accessToken] = tokenParts[tokenParts.length - 1].split(':');
+
     const client = await pool.connect();
 
+     // Fetch user_id based on the provided api_key and access_token
+     const userQuery = await client.query(
+      'SELECT id FROM users WHERE api_key = $1 AND access_token = $2',
+      [apiKey, accessToken]
+    );
+    const user = userQuery.rows[0];
+
+    if (!user) {
+      response.status(401).jsonp({
+        "status": "error",
+        "message": "Unauthorized access",
+      });
+      client.release();
+      return;
+    }
+
     // Retrieve specific fields from portfolio_positions table joined with orders table
-    const positionsQuery = `
-      SELECT 
-        o.tradingsymbol, 
-        o.exchange, 
-        o.instrument_token, 
-        o.product, 
-        o.price, 
-        o.quantity, 
-        o.average_price, 
-        pp.close_price, 
-        pp.pnl, 
-        pp.value AS m2m, 
-        pp.unrealised, 
-        pp.realised 
-      FROM 
-        portfolio_positions pp 
-      INNER JOIN 
-        orders o ON pp.order_id = o.order_id`;
+    const positionsQuery = {
+      text: `
+        SELECT 
+          o.tradingsymbol, 
+          o.exchange, 
+          o.instrument_token, 
+          o.product, 
+          o.price, 
+          o.quantity, 
+          o.average_price, 
+          pp.close_price, 
+          pp.pnl, 
+          pp.value AS m2m, 
+          pp.unrealised, 
+          pp.realised 
+        FROM 
+          portfolio_positions pp 
+        INNER JOIN 
+          orders o ON pp.order_id = o.id
+        WHERE o.user_id = $1
+      `,
+      values: [user.id],
+    };
 
     const positionsResult = await client.query(positionsQuery);
 

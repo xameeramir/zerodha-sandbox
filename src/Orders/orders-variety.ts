@@ -9,6 +9,28 @@ const generateRandomOrderID = (): string => {
 
 export const POSTOrderVariety = async (request: any, response: any) => {
   try {
+    const { authorization } = request.headers;
+    // Extract user_id from the authorization header or token
+    const tokenParts = authorization.split(' ');
+    const [apiKey, accessToken] = tokenParts[tokenParts.length - 1].split(':');
+
+    const client = await pool.connect();
+
+     // Fetch user_id based on the provided api_key and access_token
+     const userQuery = await client.query(
+      'SELECT id FROM users WHERE api_key = $1 AND access_token = $2',
+      [apiKey, accessToken]
+    );
+    const user = userQuery.rows[0];
+
+    if (!user) {
+      response.status(401).jsonp({
+        "status": "error",
+        "message": "Unauthorized access",
+      });
+      client.release();
+      return;
+    }
     const {
       tradingsymbol,
       exchange,
@@ -26,12 +48,12 @@ export const POSTOrderVariety = async (request: any, response: any) => {
     const orderID = generateRandomOrderID();
 
     // Insert order details into the database
-    const client = await pool.connect();
 
     await client.query(
       `
       INSERT INTO orders (
-        order_id, 
+        id,
+        user_id,
         tradingsymbol, 
         exchange, 
         transaction_type, 
@@ -43,10 +65,11 @@ export const POSTOrderVariety = async (request: any, response: any) => {
         variety, 
         price
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     `,
       [
         orderID,
+        user.id,
         tradingsymbol,
         exchange,
         transaction_type,
@@ -99,7 +122,7 @@ export const PUTOrderVariety = async (request: any, response: any) => {
     await client.query(`
       UPDATE orders 
       SET order_type = $1, quantity = $2, price = $3, trigger_price = $4, disclosed_quantity = $5, validity = $6
-      WHERE order_id = $7
+      WHERE id = $7
     `, [order_type, quantity, price, trigger_price, disclosed_quantity, validity, orderID]);
 
     client.release();
@@ -151,7 +174,7 @@ const calculateAndInsertPositions = async (client: any, orderID: any) => {
         realised
       )
       SELECT
-        o.order_id,
+        o.id,
         -- Replace with your calculation logic for average_price, close_price, value, pnl, m2m, unrealised, realised
         AVG(o.price) AS average_price,
         MAX(o.price) AS close_price,
@@ -163,9 +186,9 @@ const calculateAndInsertPositions = async (client: any, orderID: any) => {
       FROM
         orders o
       WHERE
-        o.order_id = $1
+        o.id = $1
       GROUP BY
-        o.order_id
+        o.id
     `;
 
     // Execute the insert query with the specified order_id

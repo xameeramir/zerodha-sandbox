@@ -5,7 +5,8 @@ export const generateRandomOrders = (count: number): any[] => {
   const orders = [];
   for (let i = 0; i < count; i++) {
     const order = {
-      order_id: faker.datatype.number().toString(),
+      id: faker.datatype.number().toString(),
+      user_id: 1,
       parent_order_id: faker.datatype.number().toString(),
       exchange_order_id: null,
       placed_by: faker.random.arrayElement(['SYSTEM', 'USER']),
@@ -47,7 +48,8 @@ export const generateAndInsertRandomOrders = async (count: number) => {
 
     for (let i = 0; i < count; i++) {
       const order = {
-        order_id: faker.datatype.number().toString(),
+        id: faker.datatype.number().toString(),
+        user_id: 1,
         parent_order_id: faker.datatype.number().toString(),
         exchange_order_id: null,
         placed_by: faker.random.arrayElement(['SYSTEM', 'USER']),
@@ -93,15 +95,67 @@ export const generateAndInsertRandomOrders = async (count: number) => {
   }
 };
 
-// Function to handle GET requests for a specified number of random orders
 export const GETOrders = async (request: any, response: any) => {
   try {
-    const { count } = request.query; // count is provided as a query parameter
-    const ordersCount = count ? parseInt(count) : 3; // Default to 3 orders if count is not provided or invalid
-    const client = await pool.connect();
+    const { count } = request.query;
+    const ordersCount = count ? parseInt(count) : 3;
 
-    // Fetch specified number of random orders from the database
-    const result = await client.query('SELECT * FROM orders ORDER BY RANDOM() LIMIT $1', [ordersCount]);
+    const { authorization } = request.headers;
+    // Extract user_id from the authorization header or token
+    const tokenParts = authorization.split(' ');
+    const [apiKey, accessToken] = tokenParts[tokenParts.length - 1].split(':');
+    const client = await pool.connect();
+    
+     // Fetch user_id based on the provided api_key and access_token
+     const userQuery = await client.query(
+      'SELECT id FROM users WHERE api_key = $1 AND access_token = $2',
+      [apiKey, accessToken]
+    );
+    const user = userQuery.rows[0];
+    if (!user) {
+      response.status(401).jsonp({
+        "status": "error",
+        "message": "Unauthorized access",
+      });
+      client.release();
+      return;
+    }
+
+    // Fetch specified number of random orders associated with the user using a JOIN
+    const result = await client.query(
+      'SELECT ' +
+        'o.id as order_id, ' +
+        'o.parent_order_id, ' +
+        'o.exchange_order_id, ' +
+        'o.placed_by, ' +
+        'o.variety, ' +
+        'o.status, ' +
+        'o.tradingsymbol, ' +
+        'o.exchange, ' +
+        'o.instrument_token, ' +
+        'o.transaction_type, ' +
+        'o.order_type, ' +
+        'o.product, ' +
+        'o.validity, ' +
+        'o.price, ' +
+        'o.quantity, ' +
+        'o.trigger_price, ' +
+        'o.average_price, ' +
+        'o.pending_quantity, ' +
+        'o.filled_quantity, ' +
+        'o.disclosed_quantity, ' +
+        'o.market_protection, ' +
+        'o.order_timestamp, ' +
+        'o.exchange_timestamp, ' +
+        'o.status_message, ' +
+        'o.tag ' +
+      'FROM orders o ' +
+      'INNER JOIN users u ON o.user_id = u.id ' +
+      'WHERE u.id = $1 ' +
+      'ORDER BY RANDOM() ' +
+      'LIMIT $2',
+      [user.id, ordersCount]
+    );
 
     client.release();
 
@@ -161,7 +215,7 @@ export const GETOrderById = async (request: any, response: any) => {
     const client = await pool.connect();
 
     // Fetch order data from the database based on the orderId
-    const result = await client.query('SELECT * FROM orders WHERE order_id = $1', [orderId]);
+    const result = await client.query('SELECT * FROM orders WHERE id = $1', [orderId]);
 
     client.release();
 

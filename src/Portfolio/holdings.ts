@@ -2,9 +2,31 @@ const pool = require('../db');
 // Function to handle GET request for retrieving holdings from database
 export const GETHoldings = async (request: any, response: any) => {
   try {
+    const { authorization } = request.headers;
+    // Extract user_id from the authorization header or token
+    const tokenParts = authorization.split(' ');
+    const [apiKey, accessToken] = tokenParts[tokenParts.length - 1].split(':');
+
     const client = await pool.connect();
+
+     // Fetch user_id based on the provided api_key and access_token
+     const userQuery = await client.query(
+      'SELECT id FROM users WHERE api_key = $1 AND access_token = $2',
+      [apiKey, accessToken]
+    );
+    const user = userQuery.rows[0];
+
+    if (!user) {
+      response.status(401).jsonp({
+        "status": "error",
+        "message": "Unauthorized access",
+      });
+      client.release();
+      return;
+    }
     // Retrieve specific fields from portfolio_holdings table joined with orders table
-    const holdingsQuery = `
+    const holdingsQuery  = {
+    text: `
       SELECT 
         o.tradingsymbol, 
         o.exchange, 
@@ -20,7 +42,11 @@ export const GETHoldings = async (request: any, response: any) => {
       FROM 
         portfolio_holdings ph 
       INNER JOIN 
-        orders o ON ph.order_id = o.order_id`;
+        orders o ON ph.order_id = o.id;
+        WHERE o.user_id = $1
+      `,
+      values: [user.id],
+    };
 
     const holdingsResult = await client.query(holdingsQuery);
 
@@ -65,9 +91,9 @@ export const calculateAndInsertHoldings = async (client: any) => {
   try {
     // Fetch order IDs that are not present in portfolio_holdings
     const unprocessedOrdersQuery = `
-      SELECT DISTINCT o.order_id
+      SELECT DISTINCT o.id
       FROM orders o
-      LEFT JOIN portfolio_holdings ph ON o.order_id = ph.order_id
+      LEFT JOIN portfolio_holdings ph ON o.id = ph.order_id
       WHERE ph.order_id IS NULL
     `;
 
@@ -91,7 +117,7 @@ export const calculateAndInsertHoldings = async (client: any) => {
           created_at
         )
         SELECT
-          o.order_id,
+          o.id,
           -- Replace with your calculation logic for average_price, close_price, pnl, day_change, day_change_percentage
           AVG(o.price) AS average_price,
           MAX(o.price) AS close_price,
@@ -103,9 +129,9 @@ export const calculateAndInsertHoldings = async (client: any) => {
         FROM
           orders o
         WHERE
-          o.order_id = $1
+          o.id = $1
         GROUP BY
-          o.order_id
+          o.id
       `;
 
       // Execute the insert query with the current order_id
