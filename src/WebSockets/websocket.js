@@ -25,21 +25,32 @@ wss.on('connection', (ws) => {
     const { instrument_token, min_price, max_price } = instrument;
 
     if (!instrumentPrices[instrument_token]) {
+      let increasing = true; // Flag to indicate increasing or decreasing price
       instrumentPrices[instrument_token] = {
         price: min_price, // Initial price
         interval: setInterval(() => {
           const currentPrice = instrumentPrices[instrument_token].price;
-          if (currentPrice < max_price) {
-            const response = {
-              instrument_token: instrument_token,
-              last_price: currentPrice,
-              timestamp: Date.now(),
-            };
-            ws.send(JSON.stringify(response));
-            instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
+
+          if (increasing) {
+            if (currentPrice < max_price) {
+              instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
+            } else {
+              increasing = false; // Change direction to decrease
+            }
           } else {
-            clearInterval(instrumentPrices[instrument_token].interval); // Stop when price reaches max_price
+            if (currentPrice > min_price) {
+              instrumentPrices[instrument_token].price -= 0.1; // Decrement price by 0.1
+            } else {
+              increasing = true; // Change direction to increase
+            }
           }
+
+          const response = {
+            instrument_token: instrument_token,
+            last_price: instrumentPrices[instrument_token].price,
+            timestamp: Date.now(),
+          };
+          ws.send(JSON.stringify(response));
         }, 10 * 60 * 1000), // 10 minutes interval
       };
     }
