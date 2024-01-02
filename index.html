@@ -9,62 +9,83 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
 </head>
 <body>
-
 <div class="jumbotron text-center">
   <h2>Zerodha APIs Test environment</h2>
   <p>Free sandbox for testing Zerodha's <a href="https://kite.trade/docs/connect/v3">Kite and Coin APIs</a></p> 
   APIs are mocked at this root URL <code>https://zerodha-sandbox.herokuapp.com/</code>
 </div>
-  
-<div class="container">
-  <div class="row">
-    <div class="col-sm-4">
-      <h3>v3 APIs</h3>
-      <p><a href="https://kite.trade/docs/connect/v3/">All the v3 API</a> mocks available*</p>      
+<style>
+  .instrument-field {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .instrument-field input {
+    flex: 1;
+    margin-right: 5px;
+  }
+</style>
+<div class="container mt-4">
+  <form id="instrumentForm">
+    <div id="instrumentFields">
+      <div class="form-row mb-2 instrument-field">
+        <input type="number" class="form-control" placeholder="Instrument Token" name="instrument_token[]" required>
+        <input type="number" class="form-control" placeholder="Min Price" name="min_price[]" required>
+        <input type="number" class="form-control" placeholder="Max Price" name="max_price[]" required>
+      </div>
     </div>
-    <div class="col-sm-4">
-      <h3>Endpoint</h3>
-      <p>Replace <a href="https://kite.trade/docs/connect/v3/#root-api-endpoint">the API endpoint</a> to <code>https://zerodha-sandbox.herokuapp.com/</code> </p>
-    </div>
-    <div class="col-sm-4">
-      <h3>Free</h3>        
-      <p>No need of any paid API keys</p>
-    </div>
-  </div>
 
-  <div class="row">
-    <div class="col-sm-4">
-      <h3>Open source</h3>
-      <p>The APIs are <a href="https://github.com/nordible/zerodha-sandbox">open source</a></p>      
-    </div>
-    <div class="col-sm-4">
-      <h3>Contribute</h3>
-      <p><a href="https://github.com/nordible/zerodha-sandbox/pulls">Contributions</a> are most welcome!</p>
-    </div>
-    <div class="col-sm-4">
-      <h3>Coffee</h3>        
-      <p>We love <a href="https://www.buymeacoffee.com/nordible"> coffee</a></p>
-    </div>
-  </div>
+    <button type="button" class="btn btn-primary mb-2" id="addInstrument">Add Instrument</button>
+    <button type="submit" class="btn btn-success mb-2">Start Webhook</button>
+  </form>
+</div>
 
-  <div class="row">
-    <div class="col-sm-4">
-      <h3>Run locally</h3>
-      <p>You can run it like any npm project</p>      
-    </div>
-    <div class="col-sm-4">
-      <h3>Slow?</h3>
-      <p>Your very first request will be slow. Be patient!</p>
-    </div>
-    <div class="col-sm-4">
-      <h3>Collab request</h3>        
-      <p><code>COLLABORATION-NEEDED</code> is our extra key to indicate collaborations needs :)</a></p>
-    </div>
-  </div>
+
+  <!-- Other content remains the same -->
 
   <footer>&copy; <a href="https://nordible.com/">nordible</a></footer>
 </div>
-</body>
+<script>
+  $(document).ready(function() {
+    // Add instrument fieldset on button click
+    $("#addInstrument").on("click", function() {
+      var fieldset = `
+        <div class="form-row mb-2 instrument-field">
+          <input type="number" class="form-control" placeholder="Instrument Token" name="instrument_token[]" required>
+          <input type="number" class="form-control" placeholder="Min Price" name="min_price[]" required>
+          <input type="number" class="form-control" placeholder="Max Price" name="max_price[]" required>
+        </div>
+      `;
+      $("#instrumentFields").append(fieldset);
+    });
+
+    // Form submission
+    $("#instrumentForm").submit(function(event) {
+      event.preventDefault();
+
+      var formData = $(this).serializeArray();
+      var instruments = [];
+
+      for (var i = 0; i < formData.length; i += 3) {
+        var instrumentObj = {
+          instrument_token: parseInt(formData[i].value),
+          min_price: parseFloat(formData[i + 1].value),
+          max_price: parseFloat(formData[i + 2].value)
+        };
+        instruments.push(instrumentObj);
+      }
+
+      // Simulate API call (Replace this with actual API endpoint and HTTP request)
+      console.log("Posting to API:", instruments);
+      // Example: $.post('your_api_endpoint', { instruments: instruments }, function(response) { console.log(response); });
+
+      // Reset form after submission
+      $("#instrumentFields").empty();
+      $("#instrumentForm")[0].reset();
+    });
+  });
+</script>
+
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-109226220-1"></script>
 <script>
@@ -73,4 +94,5 @@
   gtag('js', new Date());
   gtag('config', 'UA-109226220-1');
 </script>
+</body>
 </html>

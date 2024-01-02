@@ -18,10 +18,11 @@
     "json-server": "^0.15.1",
     "pg": "^8.11.3",
     "tslint-config-airbnb": "^5.11.2",
-    "typescript": "^3.6.4",
     "ws": "^8.16.0"
   },
   "devDependencies": {
-    "@types/faker": "^6.6.9"
+    "@types/faker": "^6.6.9",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.3"
   }
 }

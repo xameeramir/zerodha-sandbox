@@ -22,6 +22,70 @@ const UnderContruction = (request: any, response: any) => {
     });
 }
 
+const WebSocket = require('ws');
+
+function startWebSocketServer(instruments: any) {
+  const wss = new WebSocket.Server({ port: 8082 });
+  
+  interface InstrumentPrice {
+    price: number;
+    interval: NodeJS.Timeout;
+  }
+  
+  interface InstrumentPrices {
+    [key: string]: InstrumentPrice;
+  }
+  
+  const instrumentPrices: InstrumentPrices = {};
+
+  wss.on('connection', (ws: any) => {
+    ws.on('message', (message: any) => {
+      console.log('Received message:', message);
+      // Process the message and potentially send responses
+    });
+
+    ws.on('close', () => {
+      console.log('Client disconnected');
+    });
+    
+
+    instruments.forEach((instrument: any) => {
+      const { instrument_token, min_price, max_price } = instrument;
+
+      if (!instrumentPrices[instrument_token]) {
+        let increasing = true; // Flag to indicate increasing or decreasing price
+        instrumentPrices[instrument_token] = {
+          price: min_price, // Initial price
+          interval: setInterval(() => {
+            const currentPrice = instrumentPrices[instrument_token].price;
+
+            if (increasing) {
+              if (currentPrice < max_price) {
+                instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
+              } else {
+                increasing = false; // Change direction to decrease
+              }
+            } else {
+              if (currentPrice > min_price) {
+                instrumentPrices[instrument_token].price -= 0.1; // Decrement price by 0.1
+              } else {
+                increasing = true; // Change direction to increase
+              }
+            }
+
+            const response = {
+              instrument_token: instrument_token,
+              last_price: instrumentPrices[instrument_token].price,
+              timestamp: Date.now(),
+            };
+            ws.send(JSON.stringify(response));
+          }, 10 * 60 * 1000), // 10 minutes interval
+        };
+      }
+    });
+  });
+}
+
 export const router = (server: any) => {
 
     // User routes
@@ -75,6 +139,12 @@ export const router = (server: any) => {
     server.get('/gtt/triggers/:id', GETGTTtriggerById);
     server.put('/gtt/triggers/:id', PUTGTTtriggerById);
     server.delete('/gtt/triggers/:id', DELETEGTTtriggerById);
-
+    server.post('/start-websocket', (req: any, res: any) => {
+        if (!req.body || !Array.isArray(req.body)) {
+          return res.status(400).send('Invalid instruments data');
+        }
+        startWebSocketServer(req.body);
+        res.send('WebSocket server started successfully');
+      });
 
 }
