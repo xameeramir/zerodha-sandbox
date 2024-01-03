@@ -23,21 +23,20 @@ const UnderContruction = (request: any, response: any) => {
 }
 
 const WebSocket = require('ws');
+var wss: any;
+interface InstrumentPrice {
+  price: number;
+  interval: NodeJS.Timeout;
+}
 
+interface InstrumentPrices {
+  [key: string]: InstrumentPrice;
+}
+
+const instrumentPrices: InstrumentPrices = {};
+let isServerRunning = false; // Flag to track server status
 function startWebSocketServer(instruments: any) {
-  const wss = new WebSocket.Server({ port: 8082 });
-  
-  interface InstrumentPrice {
-    price: number;
-    interval: NodeJS.Timeout;
-  }
-  
-  interface InstrumentPrices {
-    [key: string]: InstrumentPrice;
-  }
-  
-  const instrumentPrices: InstrumentPrices = {};
-
+  wss = new WebSocket.Server({ port: 8082 });
   wss.on('connection', (ws: any) => {
     ws.on('message', (message: any) => {
       console.log('Received message:', message);
@@ -47,7 +46,13 @@ function startWebSocketServer(instruments: any) {
     ws.on('close', () => {
       console.log('Client disconnected');
     });
-    
+    wss.on('listening', () => {
+      isServerRunning = true; 
+    });
+  
+    wss.on('close', () => {
+      isServerRunning = false;
+    });
 
     instruments.forEach((instrument: any) => {
       const { instrument_token, min_price, max_price } = instrument;
@@ -85,7 +90,16 @@ function startWebSocketServer(instruments: any) {
     });
   });
 }
-
+// Function to clear all intervals related to instruments
+function clearIntervalAllInstruments() {
+  Object.keys(instrumentPrices).forEach(function (instrument_token) {
+    clearInterval(instrumentPrices[instrument_token].interval);
+    delete instrumentPrices[instrument_token];
+  });
+}
+function isWebSocketActive(wss: any) {
+  return wss && wss.readyState === wss.OPEN;
+}
 export const router = (server: any) => {
 
     // User routes
@@ -140,11 +154,41 @@ export const router = (server: any) => {
     server.put('/gtt/triggers/:id', PUTGTTtriggerById);
     server.delete('/gtt/triggers/:id', DELETEGTTtriggerById);
     server.post('/start-websocket', (req: any, res: any) => {
-        if (!req.body || !Array.isArray(req.body)) {
-          return res.status(400).send('Invalid instruments data');
-        }
-        startWebSocketServer(req.body);
-        res.send('WebSocket server started successfully');
-      });
+      if (isServerRunning) {
+        return res.status(200).json({ message: 'WebSocket server is already running' });
+      }
+    
+      if (!req.body || !Array.isArray(req.body)) {
+        return res.status(400).send('Invalid instruments data');
+      }
+    
+      startWebSocketServer(req.body);
+      isServerRunning = true; // Update server status
+      res.status(200).json({ message: 'WebSocket server started successfully' });
+    });
+    
+    server.post('/stop-websocket', function(req: any, res: any) {
+      if (wss) {
+        wss.close((err: any) => {
+          if (err) {
+            console.error('Error closing WebSocket server:', err);
+            res.status(500).json({ message: 'Error stopping WebSocket server' });
+          } else {
+            wss = undefined; // Reset WebSocket server instance
+            clearIntervalAllInstruments(); // Clear all intervals
+            res.status(200).json({ message: 'WebSocket server stopped successfully' });
+          }
+        });
+      } else {
+        res.status(200).json({ message: 'WebSocket server is not active' });
+      }
+    });
+    server.get('/check-websocket', function(req: any, res: any) {
+      if (isWebSocketActive(wss)) {
+        res.status(200).json({ message: 'WebSocket server is active' });
+      } else {
+        res.status(200).json({ message: 'WebSocket server is not active' });
+      }
+    });   
 
 }
