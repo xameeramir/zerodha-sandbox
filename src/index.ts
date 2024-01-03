@@ -208,7 +208,7 @@ const createOrdersTable = async () => {
         await client.query(`
           CREATE TABLE IF NOT EXISTS portfolio_positions (
             position_id SERIAL PRIMARY KEY,
-            order_id INTEGER REFERENCES orders(id),
+            instrument_token INTEGER REFERENCES orders(instrument_token),
             average_price NUMERIC,
             close_price NUMERIC,
             value NUMERIC,
@@ -246,7 +246,7 @@ const createOrdersTable = async () => {
         await client.query(`
         CREATE TABLE IF NOT EXISTS portfolio_holdings (
           holding_id SERIAL PRIMARY KEY,
-          order_id INTEGER REFERENCES orders(id),
+          instrument_token INTEGER REFERENCES orders(instrument_token),
           average_price NUMERIC,
           close_price NUMERIC,
           pnl NUMERIC,

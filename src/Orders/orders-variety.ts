@@ -161,45 +161,129 @@ const calculateAndInsertPositions = async (client: any, orderID: any) => {
     // Begin a transaction
     await client.query('BEGIN');
 
-    // Calculate and insert data into positions table for a specific order_id
-    const insertQuery = `
-      INSERT INTO portfolio_positions (
-        order_id,
-        average_price,
-        close_price,
-        value,
-        pnl,
-        m2m,
-        unrealised,
-        realised
+    // Check if there's an existing position for the given instrument_token
+    const positionCheckQuery = `
+      SELECT COUNT(*) AS count
+      FROM portfolio_positions
+      WHERE instrument_token = (
+        SELECT instrument_token
+        FROM orders
+        WHERE id = $1
       )
-      SELECT
-        o.id,
-        -- Replace with your calculation logic for average_price, close_price, value, pnl, m2m, unrealised, realised
-        AVG(o.price) AS average_price,
-        MAX(o.price) AS close_price,
-        SUM(o.price * o.quantity) AS value,
-        SUM(CASE WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price) ELSE 0 END) AS pnl,
-        SUM(CASE WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price) ELSE 0 END) AS m2m,
-        SUM(CASE WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price) ELSE 0 END) AS unrealised,
-        SUM(CASE WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price) ELSE 0 END) AS realised
-      FROM
-        orders o
-      WHERE
-        o.id = $1
-      GROUP BY
-        o.id
     `;
+    const positionCheckResult = await client.query(positionCheckQuery, [orderID]);
 
-    // Execute the insert query with the specified order_id
-    await client.query(insertQuery, [orderID]);
+    const positionExists = positionCheckResult.rows[0].count > 0;
 
-    // Commit the transaction
+    if (positionExists) {
+      // Update existing position based on instrument_token
+      const updateQuery = `
+        UPDATE portfolio_positions AS pp
+        SET
+          average_price = (
+            SELECT AVG(o.price)
+            FROM orders AS o
+            WHERE o.instrument_token = pp.instrument_token
+          ),
+          close_price = (
+            SELECT MAX(o.price)
+            FROM orders AS o
+            WHERE o.instrument_token = pp.instrument_token
+          ),
+          value = (
+            SELECT SUM(o.price * o.quantity)
+            FROM orders AS o
+            WHERE o.instrument_token = pp.instrument_token
+          ),
+          pnl = (
+            SELECT SUM(CASE
+              WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price)
+              ELSE 0
+            END)
+            FROM orders AS o
+            WHERE o.instrument_token = pp.instrument_token
+          ),
+          m2m = (
+            SELECT SUM(CASE
+              WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price)
+              ELSE 0
+            END)
+            FROM orders AS o
+            WHERE o.instrument_token = pp.instrument_token
+          ),
+          unrealised = (
+            SELECT SUM(CASE
+              WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price)
+              ELSE 0
+            END)
+            FROM orders AS o
+            WHERE o.instrument_token = pp.instrument_token
+          ),
+          realised = (
+            SELECT SUM(CASE
+              WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price)
+              ELSE 0
+            END)
+            FROM orders AS o
+            WHERE o.instrument_token = pp.instrument_token
+          )
+        WHERE pp.instrument_token = (
+          SELECT instrument_token
+          FROM orders
+          WHERE id = $1
+        )
+      `;
+
+      await client.query(updateQuery, [orderID]);
+    } else {
+      // Insert new position for the instrument_token
+      const insertQuery = `
+        INSERT INTO portfolio_positions (
+          instrument_token,
+          average_price,
+          close_price,
+          value,
+          pnl,
+          m2m,
+          unrealised,
+          realised
+        )
+        SELECT
+          o.instrument_token,
+          AVG(o.price) AS average_price,
+          MAX(o.price) AS close_price,
+          SUM(o.price * o.quantity) AS value,
+          SUM(CASE
+            WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price)
+            ELSE 0
+          END) AS pnl,
+          SUM(CASE
+            WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price)
+            ELSE 0
+          END) AS m2m,
+          SUM(CASE
+            WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price)
+            ELSE 0
+          END) AS unrealised,
+          SUM(CASE
+            WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price)
+            ELSE 0
+          END) AS realised
+        FROM
+          orders o
+        WHERE
+          o.id = $1
+        GROUP BY
+          o.instrument_token
+      `;
+
+      await client.query(insertQuery, [orderID]);
+    }
     await client.query('COMMIT');
 
-    console.log(`Positions calculated and inserted for order_id: ${orderID} successfully.`);
+    console.log(`Positions calculated and inserted/updated for order_id: ${orderID} successfully.`);
   } catch (error) {
-    console.error(`Error calculating and inserting positions for order_id: ${orderID}`, error);
+    console.error(`Error calculating and inserting/updating positions for order_id: ${orderID}`, error);
   }
 };
 
