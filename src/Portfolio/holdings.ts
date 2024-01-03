@@ -24,32 +24,38 @@ export const GETHoldings = async (request: any, response: any) => {
       client.release();
       return;
     }
-    // Retrieve specific fields from portfolio_holdings table joined with orders table
-    const holdingsQuery  = {
-    text: `
-      SELECT 
-        o.tradingsymbol, 
-        o.exchange, 
-        o.instrument_token, 
-        o.product, 
-        o.price, 
-        o.quantity, 
-        o.average_price, 
-        ph.close_price, 
-        ph.pnl, 
-        ph.day_change, 
-        ph.day_change_percentage 
-      FROM 
-        portfolio_holdings ph 
-      INNER JOIN 
-        orders o ON ph.order_id = o.id;
-        WHERE o.user_id = $1
+    const holdingsQuery = {
+      text: `
+        SELECT 
+          o.tradingsymbol, 
+          o.exchange, 
+          o.instrument_token, 
+          o.product, 
+          o.price, 
+          SUM(CASE WHEN o.transaction_type = 'BUY' THEN o.quantity ELSE -o.quantity END) AS total_quantity,
+          MAX(o.average_price) AS average_price, 
+          MAX(ph.close_price) AS close_price, 
+          MAX(ph.pnl) AS pnl, 
+          MAX(ph.day_change) AS day_change, 
+          MAX(ph.day_change_percentage) AS day_change_percentage
+        FROM 
+          portfolio_holdings ph 
+        INNER JOIN 
+          orders o ON ph.order_id = o.id
+        WHERE 
+          o.user_id = $1
+        GROUP BY 
+          o.tradingsymbol, 
+          o.exchange, 
+          o.instrument_token, 
+          o.product, 
+          o.price
       `,
       values: [user.id],
     };
-
+    
     const holdingsResult = await client.query(holdingsQuery);
-
+    
     const holdingsData = holdingsResult.rows.map((row: any) => ({
       tradingsymbol: row.tradingsymbol,
       exchange: row.exchange,
@@ -57,13 +63,13 @@ export const GETHoldings = async (request: any, response: any) => {
       isin: 0, // Replace with actual logic to calculate
       product: row.product,
       price: row.price,
-      quantity: row.quantity,
+      quantity: parseFloat(row.total_quantity), // Assuming the quantity is numeric, convert if necessary
       used_quantity: 0, // Replace with actual logic to calculate used_quantity
       t1_quantity: 0, // Replace with actual logic to calculate t1_quantity
-      realised_quantity: row.quantity, // Assuming this is the same as the quantity
-      authorised_quantity: row.authorised_quantity, 
-      authorised_date: row.authorised_date, 
-      opening_quantity: row.quantity, // Assuming this is the same as the quantity
+      realised_quantity: parseFloat(row.total_quantity), // Assuming this is the same as the total_quantity
+      authorised_quantity: row.authorised_quantity,
+      authorised_date: row.authorised_date,
+      opening_quantity: parseFloat(row.total_quantity), // Assuming this is the same as the total_quantity
       collateral_quantity: 0, // Replace with actual collateral_quantity
       collateral_type: '', // Replace with actual collateral_type
       discrepancy: false, // Replace with actual discrepancy logic
@@ -74,11 +80,12 @@ export const GETHoldings = async (request: any, response: any) => {
       day_change: row.day_change,
       day_change_percentage: row.day_change_percentage,
     }));
-
+    
     response.status(200).jsonp({
       "status": "success",
       "data": holdingsData,
     });
+    
 
     client.release();
   } catch (error) {
@@ -98,7 +105,7 @@ export const calculateAndInsertHoldings = async (client: any) => {
     `;
 
     const unprocessedOrdersResult = await client.query(unprocessedOrdersQuery);
-    const unprocessedOrders = unprocessedOrdersResult.rows.map((row: any) => row.order_id);
+    const unprocessedOrders = unprocessedOrdersResult.rows.map((row: any) => row.id);
 
     // Iterate through unprocessed order IDs and calculate/insert holdings
     for (const orderID of unprocessedOrders) {
@@ -121,7 +128,7 @@ export const calculateAndInsertHoldings = async (client: any) => {
           -- Replace with your calculation logic for average_price, close_price, pnl, day_change, day_change_percentage
           AVG(o.price) AS average_price,
           MAX(o.price) AS close_price,
-          SUM(CASE WHEN o.transaction_type = 'SELL' THEN (o.quantity * o.price - o.quantity * o.average_price) ELSE 0 END) AS pnl,
+          SUM(CASE WHEN o.transaction_type = 'BUY' THEN o.quantity ELSE -o.quantity END * o.price) AS pnl,
           -- Calculation logic for day_change and day_change_percentage can be placed here
           0 AS day_change,
           0 AS day_change_percentage,
@@ -155,4 +162,3 @@ export const calculateAndInsertHoldings = async (client: any) => {
     console.error('Error processing unprocessed orders:', error);
   }
 };
-

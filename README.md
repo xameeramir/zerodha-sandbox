@@ -68,6 +68,11 @@ This Docker deployment utilizes a PostgreSQL database and runs the Zerodha sandb
 For local development or manual setup, refer to the steps mentioned earlier in this README under "Running Locally."
 
 
+Usage:
+ Default user will be created after initialization:
+ Use below token for making API calls:
+ Authorization: token SampleAPIKey:SampleAccessToken
+
 ## Collaborations are most welcome!
 Collaborations [pull requests](https://github.com/nordible/zerodha-mock-apis/pulls) are welcome!
 

@@ -4,7 +4,7 @@ import { GETUserMarginSegments } from "./User/user-margins-segment";
 import { POSTOrderVariety, PUTOrderVariety, DELETEOrderVariety } from './Orders/orders-variety';
 import { GETOrders, GETOrderById, GETOrderByIdTrades, generateAndInsertRandomOrders } from './Orders/orders';
 import { GETTrades } from './Orders/trades';
-import { GETHoldings } from './Portfolio/holdings';
+import { GETHoldings, calculateAndInsertHoldings } from './Portfolio/holdings';
 import { GETPositions } from './Portfolio/positions';
 import { PUTPositions } from './Portfolio/positions';
 import { GetInstruments, GetInstrumentsByExchange } from './Instruments/instruments';
@@ -15,6 +15,8 @@ import { POSTMFSips, PUTMFSipsByOrderId, DELETEMFSipsByOrderId, GETMFSips, GETMF
 import { GETMFHoldings } from "./MutualFunds/holdings";
 import { GETMFInstruments } from "./MutualFunds/instruments";
 import { DELETEGTTtriggerById, PUTGTTtriggerById, GETGTTtriggerById, GETGTTtrigger, POSTGTTtrigger } from "./GTT/triggers";
+const pool = require('./db');
+
 
 const UnderContruction = (request: any, response: any) => {
     response.status(503).jsonp({
@@ -121,6 +123,17 @@ export const router = (server: any) => {
 
     // Portfolio
     server.get('/portfolio/holdings', GETHoldings);
+    server.get('/portfolio/move-holdings', async (req: any, res: any) => {
+      try {
+        const client = await pool.connect();
+        await calculateAndInsertHoldings(client);
+        client.release();
+        res.status(200).json({ message: 'Holdings moved and calculated successfully!' });
+      } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Internal Server Error');
+      }
+    });
     server.get('/portfolio/positions', GETPositions);
     server.put('/portfolio/positions', PUTPositions);
 
