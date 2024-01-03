@@ -36,16 +36,69 @@
     </div>
 
     <button type="button" class="btn btn-primary mb-2" id="addInstrument">Add Instrument</button>
-    <button type="submit" class="btn btn-success mb-2">Start Webhook</button>
+    <button type="submit" class="btn btn-success mb-2" id="startWebhook">Start Webhook</button>
+    <button type="button" class="btn btn-danger mb-2" id="stopWebhook" style="display: none;">Stop Webhook</button>
   </form>
+
+  <div id="responseMessage" style="display: none;"></div>
 </div>
-
-
-  <!-- Other content remains the same -->
-
   <footer>&copy; <a href="https://nordible.com/">nordible</a></footer>
 </div>
 <script>
+  async function sendInstrumentsToWebSocket(instruments) {
+        try {
+          const response = await fetch('http://localhost:3000/start-websocket', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(instruments),
+          });
+
+          if (response.ok) {
+            document.getElementById('responseMessage').innerText = 'WebSocket server started successfully';
+            document.getElementById('responseMessage').className = 'alert alert-success';
+            showStopButton()
+          } else {
+            throw new Error('Failed to start WebSocket server');
+          }
+
+          const responseData = await response.json();
+          console.log('Response:', responseData);
+          // You can perform additional actions with the response if needed
+        } catch (error) {
+          document.getElementById('responseMessage').innerText = 'Failed to start WebSocket server';
+          document.getElementById('responseMessage').className = 'alert alert-danger';
+        }
+
+        document.getElementById('responseMessage').style.display = 'block';
+      }
+
+      // Function to handle showing/hiding the stop button
+  function showStopButton() {
+    document.getElementById('stopWebhook').style.display = 'block';
+  }
+
+  // Function to handle the click event for stopping the WebSocket
+  document.getElementById('stopWebhook').addEventListener('click', async function () {
+    try {
+      const response = await fetch('http://localhost:3000/stop-websocket', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        document.getElementById('responseMessage').innerText = 'WebSocket server stopped successfully';
+        document.getElementById('responseMessage').className = 'alert alert-success';
+      } else {
+        throw new Error('Failed to stop WebSocket server');
+      }
+    } catch (error) {
+      document.getElementById('responseMessage').innerText = 'Failed to stop WebSocket server';
+      document.getElementById('responseMessage').className = 'alert alert-danger';
+    }
+
+    document.getElementById('responseMessage').style.display = 'block';
+  });
   $(document).ready(function() {
     // Add instrument fieldset on button click
     $("#addInstrument").on("click", function() {
@@ -77,6 +130,8 @@
 
       // Simulate API call (Replace this with actual API endpoint and HTTP request)
       console.log("Posting to API:", instruments);
+      sendInstrumentsToWebSocket(instruments)
+      
       // Example: $.post('your_api_endpoint', { instruments: instruments }, function(response) { console.log(response); });
 
       // Reset form after submission
@@ -85,6 +140,7 @@
     });
   });
 </script>
+
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-109226220-1"></script>
