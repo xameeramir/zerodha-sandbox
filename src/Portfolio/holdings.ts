@@ -27,11 +27,11 @@ export const GETHoldings = async (request: any, response: any) => {
     const holdingsQuery = {
       text: `
         SELECT 
-          o.tradingsymbol, 
-          o.exchange, 
           o.instrument_token, 
-          o.product, 
-          o.price, 
+          MAX(o.tradingsymbol) AS tradingsymbol,
+          MAX(o.exchange) AS exchange,
+          MAX(o.product) AS product, 
+          MAX(o.price) AS price, 
           SUM(CASE WHEN o.transaction_type = 'BUY' THEN o.quantity ELSE -o.quantity END) AS total_quantity,
           MAX(o.average_price) AS average_price, 
           MAX(ph.close_price) AS close_price, 
@@ -45,15 +45,10 @@ export const GETHoldings = async (request: any, response: any) => {
         WHERE 
           o.user_id = $1
         GROUP BY 
-          o.tradingsymbol, 
-          o.exchange, 
-          o.instrument_token, 
-          o.product, 
-          o.price
+          o.instrument_token
       `,
       values: [user.id],
     };
-    
     const holdingsResult = await client.query(holdingsQuery);
     
     const holdingsData = holdingsResult.rows.map((row: any) => ({
