@@ -58,7 +58,8 @@
           if (response.ok) {
             document.getElementById('responseMessage').innerText = 'WebSocket server started successfully';
             document.getElementById('responseMessage').className = 'alert alert-success';
-            showStopButton()
+            document.getElementById('startWebhook').style.display = 'none';
+            document.getElementById('stopWebhook').style.display = 'block';
           } else {
             throw new Error('Failed to start WebSocket server');
           }
@@ -73,11 +74,6 @@
 
         document.getElementById('responseMessage').style.display = 'block';
       }
-
-      // Function to handle showing/hiding the stop button
-  function showStopButton() {
-    document.getElementById('stopWebhook').style.display = 'block';
-  }
 
   // Function to handle the click event for stopping the WebSocket
   document.getElementById('stopWebhook').addEventListener('click', async function () {
@@ -131,9 +127,6 @@
       // Simulate API call (Replace this with actual API endpoint and HTTP request)
       console.log("Posting to API:", instruments);
       sendInstrumentsToWebSocket(instruments)
-      
-      // Example: $.post('your_api_endpoint', { instruments: instruments }, function(response) { console.log(response); });
-
       // Reset form after submission
       $("#instrumentFields").empty();
       $("#instrumentForm")[0].reset();
