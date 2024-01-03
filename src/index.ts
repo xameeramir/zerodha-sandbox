@@ -1,5 +1,6 @@
 import { router } from "./router";
-
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const server = express();
 const port = process.env.PORT || 3000;
@@ -76,6 +77,70 @@ const createUserTableAndInsertData = async () => {
     console.error('Error creating users table:', error);
   }
 };
+async function checkInstrumentsTable() {
+  try {
+    const tableCheckQuery = `
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_name = 'instruments'
+      )
+    `;
+
+    const result = await pool.query(tableCheckQuery);
+    return result.rows[0].exists;
+  } catch (error) {
+    console.error('Error checking table existence:', error);
+    return false;
+  }
+}
+// Function to create the instruments table
+async function createInstrumentsTable() {
+  try {
+    const tableExists = await checkInstrumentsTable();
+    if (!tableExists) {
+      const createTableQuery = `
+        CREATE TABLE instruments (
+          instrument_token SERIAL PRIMARY KEY,
+          exchange_token INTEGER,
+          tradingsymbol VARCHAR(255),
+          name VARCHAR(255),
+          last_price FLOAT,
+          expiry DATE,
+          strike FLOAT,
+          tick_size FLOAT,
+          lot_size INTEGER,
+          instrument_type VARCHAR(255),
+          segment VARCHAR(255),
+          exchange VARCHAR(255)
+        )
+      `;
+
+      await pool.query(createTableQuery);
+      console.log('Instruments table created successfully.');
+    } else {
+      console.log('Instruments table already exists.');
+    }
+
+    // Check if the table has entries
+    const tableEntriesQuery = 'SELECT COUNT(*) FROM instruments';
+    const entriesResult = await pool.query(tableEntriesQuery);
+    const entriesCount = parseInt(entriesResult.rows[0].count, 10);
+
+    if (entriesCount > 0) {
+      console.log('Instruments table already contains entries.');
+    } else {
+      // Import data from the SQL file
+      const filePath = path.join(__dirname, '../dumps', 'instruments.sql');
+      const sql = fs.readFileSync(filePath).toString();
+
+      await pool.query(sql);
+      console.log('Data imported successfully.');
+    }
+  } catch (error) {
+    console.error('Error creating table or importing data:', error);
+  }
+}
 
 const createOrdersTable = async () => {
     try {
@@ -209,6 +274,7 @@ const createOrdersTable = async () => {
           CREATE TABLE IF NOT EXISTS portfolio_positions (
             position_id SERIAL PRIMARY KEY,
             order_id INTEGER REFERENCES orders(id),
+            instrument_token INTEGER,
             average_price NUMERIC,
             close_price NUMERIC,
             value NUMERIC,
@@ -247,6 +313,7 @@ const createOrdersTable = async () => {
         CREATE TABLE IF NOT EXISTS portfolio_holdings (
           holding_id SERIAL PRIMARY KEY,
           order_id INTEGER REFERENCES orders(id),
+          instrument_token INTEGER,
           average_price NUMERIC,
           close_price NUMERIC,
           pnl NUMERIC,
@@ -275,6 +342,7 @@ createUserTableAndInsertData()
   .then(() => createPortfolioPositionsTable())
   .then(() => createPortfolioHoldingsTable())
   .then(() => createGTTTriggersTable())
+  .then(() => createInstrumentsTable())
   .then(() => {
     server.use(express.json());
     router(server);

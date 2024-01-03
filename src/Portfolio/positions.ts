@@ -27,33 +27,35 @@ export const GETPositions = async (request: any, response: any) => {
       return;
     }
 
-    // Retrieve specific fields from portfolio_positions table joined with orders table
     const positionsQuery = {
       text: `
         SELECT 
-          o.tradingsymbol, 
-          o.exchange, 
-          o.instrument_token, 
-          o.product, 
-          o.price, 
-          o.quantity, 
-          o.average_price, 
-          pp.close_price, 
-          pp.pnl, 
-          pp.value AS m2m, 
-          pp.unrealised, 
-          pp.realised 
+          o.instrument_token,
+          MAX(o.tradingsymbol) AS tradingsymbol,
+          MAX(o.exchange) AS exchange,
+          MAX(o.product) AS product,
+          MAX(o.price) AS price,
+          SUM(CASE WHEN o.transaction_type = 'BUY' THEN o.quantity ELSE -o.quantity END) AS total_quantity,
+          MAX(o.average_price) AS average_price,
+          MAX(pp.close_price) AS close_price,
+          MAX(pp.pnl) AS pnl,
+          MAX(pp.value) AS m2m,
+          MAX(pp.unrealised) AS unrealised,
+          MAX(pp.realised) AS realised
         FROM 
-          portfolio_positions pp 
+          orders o
         INNER JOIN 
-          orders o ON pp.order_id = o.id
-        WHERE o.user_id = $1
+          portfolio_positions pp ON pp.order_id = o.id
+        WHERE 
+          o.user_id = $1
+        GROUP BY 
+          o.instrument_token
       `,
       values: [user.id],
     };
-
+    
     const positionsResult = await client.query(positionsQuery);
-
+    
     const positionsData = positionsResult.rows.map((row: any) => ({
       tradingsymbol: row.tradingsymbol,
       exchange: row.exchange,
@@ -61,13 +63,13 @@ export const GETPositions = async (request: any, response: any) => {
       isin: 0, // Replace with actual logic to calculate
       product: row.product,
       price: row.price,
-      quantity: row.quantity,
+      quantity: parseFloat(row.total_quantity), // Assuming the quantity is numeric, convert if necessary
       used_quantity: 0, // Replace with actual logic to calculate used_quantity
       t1_quantity: 0, // Replace with actual logic to calculate t1_quantity
-      realised_quantity: row.quantity, // Assuming this is the same as the quantity
+      realised_quantity: parseFloat(row.total_quantity), // Assuming this is the same as the total_quantity
       authorised_quantity: 0, // Replace with actual authorised_quantity
       authorised_date: '2021-06-08 00:00:00', // Replace with actual authorised_date
-      opening_quantity: row.quantity, // Assuming this is the same as the quantity
+      opening_quantity: parseFloat(row.total_quantity), // Assuming this is the same as the total_quantity
       collateral_quantity: 0, // Replace with actual collateral_quantity
       collateral_type: '', // Replace with actual collateral_type
       discrepancy: false, // Replace with actual discrepancy logic
@@ -81,18 +83,17 @@ export const GETPositions = async (request: any, response: any) => {
       unrealised: row.unrealised,
       realised: row.realised,
     }));
-
+    
     response.status(200).jsonp({
       "status": "success",
       "data": positionsData,
     });
-
-    client.release();
-  } catch (error) {
-    console.error('Error retrieving positions:', error);
-    response.status(500).jsonp({ "status": "error", "message": "Internal server error" });
-  }
-};
+        client.release();
+      } catch (error) {
+        console.error('Error retrieving positions:', error);
+        response.status(500).jsonp({ "status": "error", "message": "Internal server error" });
+      }
+    };
 
 
 export const PUTPositions = async (request: any, response: any) => {
