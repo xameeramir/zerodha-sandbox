@@ -86,7 +86,9 @@ export const GETPositions = async (request: any, response: any) => {
     
     response.status(200).jsonp({
       "status": "success",
-      "data": positionsData,
+      "data": {
+        "net": positionsData
+      },
     });
         client.release();
       } catch (error) {
