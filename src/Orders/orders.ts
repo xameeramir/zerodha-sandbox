@@ -1,25 +1,27 @@
 const faker = require('faker');
 const pool = require('../db');
 // Function to generate random orders data
-export const generateRandomOrders = (count: number): any[] => {
+export const generateRandomOrders = async (count: number, client: any) => {
+  // Query to select instrument_token and tradingsymbol randomly from the instruments table
+  const instrumentsQuery = 'SELECT instrument_token, tradingsymbol FROM instruments ORDER BY RANDOM() LIMIT $1';
+  const { rows } = await client.query(instrumentsQuery, [1]);
   const orders = [];
   for (let i = 0; i < count; i++) {
     const order = {
       id: faker.datatype.number().toString(),
-      user_id: 1,
+      user_id: 'HQ6420',
       parent_order_id: faker.datatype.number().toString(),
       exchange_order_id: null,
       placed_by: faker.random.arrayElement(['SYSTEM', 'USER']),
       variety: 'regular',
       status: faker.random.arrayElement(['REJECTED', 'ACCEPTED', 'CANCELLED', 'COMPLETE']),
-      tradingsymbol: faker.random.alphaNumeric(6),
+      tradingsymbol: rows[0].tradingsymbol,
       exchange: faker.random.arrayElement(['NSE', 'BSE']),
-      instrument_token: faker.datatype.number(),
+      instrument_token: rows[0].instrument_token,
       transaction_type: faker.random.arrayElement(['BUY', 'SELL']),
       order_type: 'MARKET',
       product: 'NRML',
       validity: 'DAY',
-
       price: parseFloat(faker.finance.amount()),
       quantity: faker.datatype.number(),
       trigger_price: parseFloat(faker.finance.amount()),
@@ -49,13 +51,12 @@ export const generateAndInsertRandomOrders = async (count: number) => {
     for (let i = 0; i < count; i++) {
       const order = {
         id: faker.datatype.number().toString(),
-        user_id: 1,
+        user_id: 'HQ6420',
         parent_order_id: faker.datatype.number().toString(),
         exchange_order_id: null,
         placed_by: faker.random.arrayElement(['SYSTEM', 'USER']),
         variety: 'regular',
         status: faker.random.arrayElement(['REJECTED', 'ACCEPTED', 'CANCELLED', 'COMPLETE']),
-
         tradingsymbol: faker.random.alphaNumeric(6),
         exchange: faker.random.arrayElement(['NSE', 'BSE']),
         instrument_token: faker.datatype.number(),

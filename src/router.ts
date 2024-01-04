@@ -52,10 +52,20 @@ function sendPriceUpdates(ws: any) {
     }
   });
 }
-
-function startWebSocketServer(instruments: any) {
+async function getDistinctInstrumentTokensForUser() {
+  const client = await pool.connect();
+  const userQuery = await client.query(
+    `SELECT DISTINCT orders.instrument_token 
+    FROM orders 
+    INNER JOIN portfolio_positions ON orders.id = portfolio_positions.order_id`
+  );
+  // Extract distinct instrument tokens from the userQuery result
+  const distinctInstrumentTokens = userQuery.rows.map((row: any) => row.instrument_token);
+  return distinctInstrumentTokens;
+  }
+async function startWebSocketServer() {
   wss = new WebSocket.Server({ port: 8082 });
-
+  const distinctTokens = await getDistinctInstrumentTokensForUser();
   wss.on('connection', (ws: any) => {
     ws.on('message', (message: any) => {
       console.log('Received message:', message);
@@ -78,11 +88,12 @@ function startWebSocketServer(instruments: any) {
     isServerRunning = false;
   });
 
-  instruments.forEach((instrument: any) => {
-    const { instrument_token, min_price, max_price } = instrument;
-
+  distinctTokens.forEach((instrument: any) => {
+    const instrument_token = instrument;
     if (!instrumentPrices[instrument_token]) {
-      let increasing = true; // Flag to indicate increasing or decreasing price
+      let increasing = true;
+      let min_price = 10
+      let max_price = 20
       instrumentPrices[instrument_token] = {
         price: min_price, // Initial price
         interval: setInterval(() => {
@@ -193,9 +204,8 @@ export const router = (server: any) => {
       if (!req.body || !Array.isArray(req.body)) {
         return res.status(400).send('Invalid instruments data');
       }
-    
-      startWebSocketServer(req.body);
-      isServerRunning = true; // Update server status
+      startWebSocketServer();
+      isServerRunning = true;
       res.status(200).json({ message: 'WebSocket server started successfully' });
     });
     
@@ -222,5 +232,5 @@ export const router = (server: any) => {
         res.status(200).json({ message: 'WebSocket server is not active' });
       }
     });   
-
+    startWebSocketServer()
 }

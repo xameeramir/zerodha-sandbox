@@ -1,7 +1,7 @@
 const faker = require('faker');
 const pool = require('../db');
 const axios = require('axios');
-
+const crypto = require('crypto');
 // Function to generate random order ID
 const generateRandomOrderID = (): string => {
   return faker.datatype.number().toString();
@@ -112,6 +112,7 @@ export const POSTOrderVariety = async (request: any, response: any) => {
     client.release();
     // After inserting the order, call the function to calculate and insert positions
     await calculateAndInsertPositions(client, orderID);
+    simulateDelayedPostback(orderID)
 
     response.status(200).jsonp({
       status: 'success',
@@ -224,22 +225,76 @@ const calculateAndInsertPositions = async (client: any, orderID: any) => {
   }
 };
 
+const postback_url = process.env.POSTBACK_URL || 'http://localhost:8100/api/z-postback'
 
-function simulateDelayedPostback(orderId: any) {
-  const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
-
-  setTimeout(() => {
-    const updatedStatusPayload = {
-      user_id: "AB1234",
-      unfilled_quantity: 0,
-      app_id: 1234,
-      order_id: orderId, // Using the provided order ID
-      status: "COMPLETE", // Simulating an updated status as "COMPLETE"
+async function simulateDelayedPostback(orderId: any) {
+try {
+  const client = await pool.connect();
+const orderQuery = await client.query(
+  `SELECT * FROM orders WHERE id = $1`,
+  [orderId]
+);
+  if (orderQuery.rows.length > 0) {
+    const orderDetails = orderQuery.rows[0];
+    const query = {
+      text: 'SELECT api_key FROM users WHERE id = $1',
+      values: [orderDetails.user_id],
     };
-    sendPostbackUpdate(updatedStatusPayload);
-  }, fiveMinutes);
-}
+  
+    const result = await client.query(query);
+  
+  const api_secret = result.rows[0].api_key;
+  const checksum = calculateChecksum(orderId, orderDetails.order_timestamp, api_secret);
 
+    // Update the payload with relevant details from the orders table
+    const updatedStatusPayload = {
+      "user_id": orderDetails.user_id,
+      "unfilled_quantity": 0,
+      "app_id": 93076,
+      "checksum": checksum,
+      "placed_by": orderDetails.placed_by,
+      "order_id": orderId,
+      "exchange_order_id": orderDetails.exchange_order_id,
+      "parent_order_id": orderDetails.parent_order_id,
+      "status": "COMPLETED",
+      "status_message": orderDetails.status_message,
+      "order_timestamp": orderDetails.order_timestamp,
+      "exchange_update_timestamp": orderDetails.exchange_timestamp,
+      "exchange_timestamp": orderDetails.exchange_timestamp,
+      "variety": orderDetails.variety,
+      "exchange": orderDetails.exchange,
+      "tradingsymbol": orderDetails.tradingsymbol,
+      "instrument_token": orderDetails.instrument_token,
+      "order_type": orderDetails.order_type,
+      "transaction_type": orderDetails.transaction_type,
+      "validity": orderDetails.validity,
+      "product": orderDetails.product,
+      "quantity": orderDetails.quantity,
+      "disclosed_quantity": orderDetails.disclosed_quantity,
+      "price": orderDetails.price,
+      "trigger_price": orderDetails.trigger_price,
+      "average_price": orderDetails.average_price,
+      "filled_quantity": orderDetails.filled_quantity,
+      "pending_quantity": orderDetails.pending_quantity,
+      "cancelled_quantity": 0,
+      "market_protection": orderDetails.market_protection,
+      "meta": {},
+      "tag": orderDetails.tag,
+      "guid": "93076XWl1mzshtvIgb"
+    };
+
+    // Assuming sendPostbackUpdate function sends the payload
+    sendPostbackUpdate(updatedStatusPayload);
+
+    setTimeout(() => {
+    }, 10000); // 10 seconds
+  } else {
+    console.log("Order ID not found or user not associated with the order.");
+  }
+} catch (error) {
+  console.error("Error executing PostgreSQL query:", error);
+}
+}
 // Function to calculate SHA-256 checksum using Web Crypto API
 async function calculateChecksum(orderId: any, orderTimestamp: any, apiSecret: any) {
   const encoder = new TextEncoder();
@@ -255,14 +310,7 @@ async function calculateChecksum(orderId: any, orderTimestamp: any, apiSecret: a
 // Function to send a POST request with the payload
 function sendPostbackUpdate(payload: any) {
   // Your API endpoint URL
-  const apiUrl = 'http://localhost:8000/api/z-postback';
-  const apiSecret = 'your_api_secret'; 
-
-  // Calculate checksum using payload data
-  const { order_id: orderId, order_timestamp: orderTimestamp } = payload;
-  const checksum = calculateChecksum(orderId, orderTimestamp, apiSecret);
-
-  payload.checksum = checksum;
+  const apiUrl = postback_url
   axios.post(apiUrl, payload)
     .then((response: { data: any; }) => {
       console.log('Postback sent successfully:', response.data);
@@ -270,5 +318,4 @@ function sendPostbackUpdate(payload: any) {
     .catch((error: any) => {
       console.error('Error sending postback:', error);
     });
-}
-
+  }

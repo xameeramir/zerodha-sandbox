@@ -29,13 +29,10 @@
   <form id="instrumentForm">
     <div id="instrumentFields">
       <div class="form-row mb-2 instrument-field">
-        <input type="number" class="form-control" placeholder="Instrument Token" name="instrument_token[]" required>
-        <input type="number" class="form-control" placeholder="Min Price" name="min_price[]" required>
-        <input type="number" class="form-control" placeholder="Max Price" name="max_price[]" required>
+        <input type="number" class="form-control" placeholder="Min Price" name="min_price[]" value="10">
+        <input type="number" class="form-control" placeholder="Max Price" name="max_price[]" value="20">
       </div>
     </div>
-
-    <button type="button" class="btn btn-primary mb-2" id="addInstrument">Add Instrument</button>
     <button type="submit" class="btn btn-success mb-2" id="startWebhook">Start Webhook</button>
     <button type="button" class="btn btn-danger mb-2" id="stopWebhook" style="display: none;">Stop Webhook</button>
   </form>
@@ -95,43 +92,26 @@
 
     document.getElementById('responseMessage').style.display = 'block';
   });
-  $(document).ready(function() {
-    // Add instrument fieldset on button click
-    $("#addInstrument").on("click", function() {
-      var fieldset = `
-        <div class="form-row mb-2 instrument-field">
-          <input type="number" class="form-control" placeholder="Instrument Token" name="instrument_token[]" required>
-          <input type="number" class="form-control" placeholder="Min Price" name="min_price[]" required>
-          <input type="number" class="form-control" placeholder="Max Price" name="max_price[]" required>
-        </div>
-      `;
-      $("#instrumentFields").append(fieldset);
-    });
-
     // Form submission
     $("#instrumentForm").submit(function(event) {
-      event.preventDefault();
+  event.preventDefault();
 
-      var formData = $(this).serializeArray();
-      var instruments = [];
+  var formData = $(this).serializeArray();
+  var instruments = [];
 
-      for (var i = 0; i < formData.length; i += 3) {
-        var instrumentObj = {
-          instrument_token: parseInt(formData[i].value),
-          min_price: parseFloat(formData[i + 1].value),
-          max_price: parseFloat(formData[i + 2].value)
-        };
-        instruments.push(instrumentObj);
-      }
+  for (var i = 0; i < formData.length; i += 2) {
+    var instrumentObj = {
+      min_price: parseFloat(formData[i].value) || 10, 
+      max_price: parseFloat(formData[i + 1].value) || 20 
+    };
+    instruments.push(instrumentObj);
+  }
+  console.log("Posting to API:", instruments);
+  sendInstrumentsToWebSocket(instruments);
 
-      // Simulate API call (Replace this with actual API endpoint and HTTP request)
-      console.log("Posting to API:", instruments);
-      sendInstrumentsToWebSocket(instruments)
-      // Reset form after submission
-      $("#instrumentFields").empty();
-      $("#instrumentForm")[0].reset();
-    });
-  });
+  // Reset form after submission
+  $("#instrumentForm")[0].reset();
+});
 </script>
 
 

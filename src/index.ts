@@ -15,7 +15,7 @@ const createUserTableAndInsertData = async () => {
     // Create users table if it doesn't exist
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
+        id VARCHAR(50) PRIMARY KEY,
         user_type VARCHAR(50),
         email VARCHAR(100),
         user_name VARCHAR(50),
@@ -42,7 +42,7 @@ const createUserTableAndInsertData = async () => {
     if (existingUsersCount === 0) {
       // Insert a sample user entry
       const sampleUserData = {
-        id: 1,
+        id: 'HQ6420',
         user_type: 'individual',
         email: 'sample@example.com',
         user_name: 'Sample User',
@@ -149,7 +149,7 @@ const createOrdersTable = async () => {
         await client.query(`
           CREATE TABLE IF NOT EXISTS orders (
             id INTEGER PRIMARY KEY,
-            user_id INTEGER REFERENCES users(id),
+            user_id VARCHAR(50) REFERENCES users(id),
             parent_order_id INTEGER,
             exchange_order_id INTEGER,
             placed_by VARCHAR(50),
@@ -180,7 +180,7 @@ const createOrdersTable = async () => {
         const existingOrdersCount = parseInt(checkExistingOrders.rows[0].count, 10);
         if (existingOrdersCount === 0) {
         // Generate random orders
-        const ordersData = generateRandomOrders(10); // Change the count as needed
+        const ordersData = await generateRandomOrders(10, client);
   
         // Insert initial orders data into the table
         for (const orderData of ordersData) {
@@ -274,7 +274,6 @@ const createOrdersTable = async () => {
           CREATE TABLE IF NOT EXISTS portfolio_positions (
             position_id SERIAL PRIMARY KEY,
             order_id INTEGER REFERENCES orders(id),
-            instrument_token INTEGER,
             average_price NUMERIC,
             close_price NUMERIC,
             value NUMERIC,
@@ -313,7 +312,6 @@ const createOrdersTable = async () => {
         CREATE TABLE IF NOT EXISTS portfolio_holdings (
           holding_id SERIAL PRIMARY KEY,
           order_id INTEGER REFERENCES orders(id),
-          instrument_token INTEGER,
           average_price NUMERIC,
           close_price NUMERIC,
           pnl NUMERIC,
@@ -335,7 +333,6 @@ const createOrdersTable = async () => {
       console.error('Error creating Portfolio Holdings table:', error);
     }
   };
-  
 // Call functions in a sequential order to create tables
 createUserTableAndInsertData()
   .then(() => createOrdersTable())
