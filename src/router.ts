@@ -34,11 +34,28 @@ interface InstrumentPrice {
 interface InstrumentPrices {
   [key: string]: InstrumentPrice;
 }
-
 const instrumentPrices: InstrumentPrices = {};
 let isServerRunning = false; // Flag to track server status
+function sendPriceUpdates(ws: any) {
+  Object.keys(instrumentPrices).forEach((instrumentToken) => {
+    const currentPrice = instrumentPrices[instrumentToken].price;
+
+    const response = {
+      instrument_token: instrumentToken,
+      last_price: currentPrice,
+      timestamp: Date.now(),
+    };
+    
+    // Check if the WebSocket connection is open before sending
+    if (ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify(response));
+    }
+  });
+}
+
 function startWebSocketServer(instruments: any) {
   wss = new WebSocket.Server({ port: 8082 });
+
   wss.on('connection', (ws: any) => {
     ws.on('message', (message: any) => {
       console.log('Received message:', message);
@@ -48,48 +65,50 @@ function startWebSocketServer(instruments: any) {
     ws.on('close', () => {
       console.log('Client disconnected');
     });
-    wss.on('listening', () => {
-      isServerRunning = true; 
-    });
-  
-    wss.on('close', () => {
-      isServerRunning = false;
-    });
 
-    instruments.forEach((instrument: any) => {
-      const { instrument_token, min_price, max_price } = instrument;
+    // Send current instrument prices to the newly connected client
+    sendPriceUpdates(ws);
+  });
 
-      if (!instrumentPrices[instrument_token]) {
-        let increasing = true; // Flag to indicate increasing or decreasing price
-        instrumentPrices[instrument_token] = {
-          price: min_price, // Initial price
-          interval: setInterval(() => {
-            const currentPrice = instrumentPrices[instrument_token].price;
+  wss.on('listening', () => {
+    isServerRunning = true;
+  });
 
-            if (increasing) {
-              if (currentPrice < max_price) {
-                instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
-              } else {
-                increasing = false; // Change direction to decrease
-              }
+  wss.on('close', () => {
+    isServerRunning = false;
+  });
+
+  instruments.forEach((instrument: any) => {
+    const { instrument_token, min_price, max_price } = instrument;
+
+    if (!instrumentPrices[instrument_token]) {
+      let increasing = true; // Flag to indicate increasing or decreasing price
+      instrumentPrices[instrument_token] = {
+        price: min_price, // Initial price
+        interval: setInterval(() => {
+          if (increasing) {
+            if (instrumentPrices[instrument_token].price < max_price) {
+              instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
             } else {
-              if (currentPrice > min_price) {
-                instrumentPrices[instrument_token].price -= 0.1; // Decrement price by 0.1
-              } else {
-                increasing = true; // Change direction to increase
-              }
+              increasing = false; // Change direction to decrease
             }
+          } else {
+            if (instrumentPrices[instrument_token].price > min_price) {
+              instrumentPrices[instrument_token].price -= 0.1; // Decrement price by 0.1
+            } else {
+              increasing = true; // Change direction to increase
+            }
+          }
 
-            const response = {
-              instrument_token: instrument_token,
-              last_price: instrumentPrices[instrument_token].price,
-              timestamp: Date.now(),
-            };
-            ws.send(JSON.stringify(response));
-          }, 10 * 60 * 1000), // 10 minutes interval
-        };
-      }
-    });
+          // Send price updates to all connected clients
+          wss.clients.forEach((client: any) => {
+            if (client.readyState === client.OPEN) {
+              sendPriceUpdates(client);
+            }
+          });
+        }, 1000), // 1 second interval
+      };
+    }
   });
 }
 // Function to clear all intervals related to instruments
