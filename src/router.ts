@@ -41,7 +41,7 @@ function sendPriceUpdates(ws: any) {
     const currentPrice = instrumentPrices[instrumentToken].price;
 
     const response = {
-      instrument_token: instrumentToken,
+      instrument_token: Number(instrumentToken),
       last_price: currentPrice,
       timestamp: Date.now(),
     };
