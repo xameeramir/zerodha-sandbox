@@ -6,6 +6,7 @@ const server = express();
 const port = process.env.PORT || 3000;
 const cors = require('cors');
 const pool = require('./db');
+const bodyParser = require('body-parser');
 import { generateRandomOrders } from './Orders/orders'
 
 const createUserTableAndInsertData = async () => {
@@ -343,7 +344,7 @@ createUserTableAndInsertData()
   .then(() => createGTTTriggersTable())
   .then(() => createInstrumentsTable())
   .then(() => {
-    server.use(express.json());
+    server.use(bodyParser.urlencoded({ extended: true }));
     router(server);
     const path = require('path');
     const publicFolder = path.join(__dirname, '../');

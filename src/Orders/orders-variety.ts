@@ -17,31 +17,20 @@ function hash(alg: any, data: any, salt:any, enc:any) {
 
 export const POSTOrderVariety = async (request: any, response: any) => {
   try {
-    interface RequestHeaders {
-      authorization: string;
-      'x-forwarded-body': string;
-    }
-    // Assuming 'request' and 'response' are of types Request and Response respectively
-    const { authorization, 'x-forwarded-body': forwardedBody }: RequestHeaders = request.headers;
-    
-    const bodyParams = new URLSearchParams(forwardedBody).toString();
-    const params = new URLSearchParams(bodyParams);
-    
+    const { authorization } = request.headers;
     // Extract user_id from the authorization header or token
     const tokenParts = authorization.split(' ');
     const [apiKey, accessToken] = tokenParts[tokenParts.length - 1].split(':');
-    
-    const requestBodyObject: Record<string, string> = {};
-    
+
     const client = await pool.connect();
-    
-    // Fetch user_id based on the provided api_key and access_token
-    const userQuery = await client.query(
+
+     // Fetch user_id based on the provided api_key and access_token
+     const userQuery = await client.query(
       'SELECT id FROM users WHERE api_key = $1 AND access_token = $2',
       [apiKey, accessToken]
     );
     const user = userQuery.rows[0];
-    
+
     if (!user) {
       response.status(401).jsonp({
         "status": "error",
@@ -57,13 +46,10 @@ export const POSTOrderVariety = async (request: any, response: any) => {
       order_type,
       quantity,
       product,
-      validity
-    } = requestBodyObject;
-    const { variety } = request.params;
-    
-    for (const [key, value] of params.entries()) {
-      requestBodyObject[key] = value;
-    }
+      validity,
+    } = request.body;
+    const { variety } = request.params; 
+
     // Query to find instrument ID based on the provided trading symbol
     const instrumentQuery = await client.query(
       'SELECT instrument_token FROM instruments WHERE tradingsymbol = $1',
@@ -130,7 +116,7 @@ export const POSTOrderVariety = async (request: any, response: any) => {
         'ACCEPTED',
         variety,
         price,
-(new Date().toISOString())
+        (new Date().toISOString())
       ]
     );
     client.release();
