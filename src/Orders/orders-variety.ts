@@ -1,11 +1,19 @@
 const faker = require('faker');
 const pool = require('../db');
 const axios = require('axios');
-const crypto = require('crypto');
+const { createHash } = require('crypto');
 // Function to generate random order ID
 const generateRandomOrderID = (): string => {
   return faker.datatype.number().toString();
 };
+
+
+function hash(alg: any, data: any, salt:any, enc:any) {
+    if (data == null) return data;
+    salt = typeof salt == 'string' ? salt : '';
+    enc = typeof enc == 'string' ? enc : 'hex';
+    return createHash(alg).update(data + salt).digest(enc);
+}
 
 export const POSTOrderVariety = async (request: any, response: any) => {
   try {
@@ -253,15 +261,15 @@ const orderQuery = await client.query(
   if (orderQuery.rows.length > 0) {
     const orderDetails = orderQuery.rows[0];
     const query = {
-      text: 'SELECT api_key FROM users WHERE id = $1',
+      text: 'SELECT api_secret FROM users WHERE id = $1',
       values: [orderDetails.user_id],
     };
   
     const result = await client.query(query);
   
   const api_secret = result.rows[0].api_key;
-  const checksum = await calculateChecksum(orderId, orderDetails.order_timestamp, api_secret);
-
+  const checksum = hash("sha256",( orderId + orderDetails.order_timestamp + api_secret),null,null);
+ 
     // Update the payload with relevant details from the orders table
     const updatedStatusPayload = {
       "user_id": orderDetails.user_id,
@@ -311,18 +319,7 @@ const orderQuery = await client.query(
   console.error("Error executing PostgreSQL query:", error);
 }
 }
-// Function to calculate SHA-256 checksum using Web Crypto API
-async function calculateChecksum(orderId: any, orderTimestamp: any, apiSecret: any) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(orderId + orderTimestamp + apiSecret);
 
-  // Use synchronous hashing with crypto.createHash
-  const hash = crypto.createHash('sha256');
-  hash.update(data);
-  const hashHex = hash.digest('hex');
-
-  return hashHex;
-}
 
 // Function to send a POST request with the payload
 function sendPostbackUpdate(payload: any) {
