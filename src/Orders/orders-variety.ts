@@ -89,9 +89,10 @@ export const POSTOrderVariety = async (request: any, response: any) => {
         validity,
         status,
         variety,
-        price
+        price,
+        order_timestamp
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     `,
       [
         orderID,
@@ -107,6 +108,7 @@ export const POSTOrderVariety = async (request: any, response: any) => {
         'ACCEPTED',
         variety,
         price,
+        (new Date().toISOString())
       ]
     );
     client.release();
@@ -244,7 +246,7 @@ const orderQuery = await client.query(
     const result = await client.query(query);
   
   const api_secret = result.rows[0].api_key;
-  const checksum = calculateChecksum(orderId, orderDetails.order_timestamp, api_secret);
+  const checksum = await calculateChecksum(orderId, orderDetails.order_timestamp, api_secret);
 
     // Update the payload with relevant details from the orders table
     const updatedStatusPayload = {
@@ -300,9 +302,10 @@ async function calculateChecksum(orderId: any, orderTimestamp: any, apiSecret: a
   const encoder = new TextEncoder();
   const data = encoder.encode(orderId + orderTimestamp + apiSecret);
 
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(byte => ('00' + byte.toString(16)).slice(-2)).join('');
+  // Use synchronous hashing with crypto.createHash
+  const hash = crypto.createHash('sha256');
+  hash.update(data);
+  const hashHex = hash.digest('hex');
 
   return hashHex;
 }
