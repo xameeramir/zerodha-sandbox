@@ -252,9 +252,9 @@ const orderQuery = await client.query(
     };
   
     const result = await client.query(query);
-  
-  const api_secret = result.rows[0].api_key;
-  const checksum = hash("sha256",( orderId + orderDetails.order_timestamp + api_secret),null,null);
+
+  const api_secret = result.rows[0].api_secret;
+  const checksum = hash("sha256",( orderId + orderDetails.order_timestamp.toISOString() + api_secret),null,null);
  
     // Update the payload with relevant details from the orders table
     const updatedStatusPayload = {
