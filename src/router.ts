@@ -63,65 +63,83 @@ async function getDistinctInstrumentTokensForUser() {
   const distinctInstrumentTokens = userQuery.rows.map((row: any) => row.instrument_token);
   return distinctInstrumentTokens;
   }
-async function startWebSocketServer() {
-  wss = new WebSocket.Server({ port: 8082 });
-  const distinctTokens = await getDistinctInstrumentTokensForUser();
-  wss.on('connection', (ws: any) => {
-    ws.on('message', (message: any) => {
-      console.log('Received message:', message);
-      // Process the message and potentially send responses
-    });
-
-    ws.on('close', () => {
-      console.log('Client disconnected');
-    });
-
-    // Send current instrument prices to the newly connected client
-    sendPriceUpdates(ws);
-  });
-
-  wss.on('listening', () => {
-    isServerRunning = true;
-  });
-
-  wss.on('close', () => {
-    isServerRunning = false;
-  });
-
-  distinctTokens.forEach((instrument: any) => {
-    const instrument_token = instrument;
-    if (!instrumentPrices[instrument_token]) {
-      let increasing = true;
-      let min_price = 10
-      let max_price = 20
-      instrumentPrices[instrument_token] = {
-        price: min_price, // Initial price
-        interval: setInterval(() => {
-          if (increasing) {
-            if (instrumentPrices[instrument_token].price < max_price) {
-              instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
-            } else {
-              increasing = false; // Change direction to decrease
-            }
-          } else {
-            if (instrumentPrices[instrument_token].price > min_price) {
-              instrumentPrices[instrument_token].price -= 0.1; // Decrement price by 0.1
-            } else {
-              increasing = true; // Change direction to increase
-            }
-          }
-
-          // Send price updates to all connected clients
-          wss.clients.forEach((client: any) => {
-            if (client.readyState === client.OPEN) {
-              sendPriceUpdates(client);
-            }
+  async function startWebSocketServer() {
+    let retryInterval: any;
+    
+    const checkDistinctTokens = async () => {
+      const distinctTokens = await getDistinctInstrumentTokensForUser();
+      if (!distinctTokens || distinctTokens.length === 0) {
+        // Retry after 1 second if distinct tokens are not found or length is 0
+        retryInterval = setTimeout(checkDistinctTokens, 1000);
+      } else {
+        // Once distinct tokens are available, clear the retry interval
+        clearTimeout(retryInterval);
+        
+        // Start WebSocket server and process distinct tokens
+        wss = new WebSocket.Server({ port: 8082 });
+  
+        wss.on('connection', (ws: any) => {
+          ws.on('message', (message: any) => {
+            console.log('Received message:', message);
+            // Process the message and potentially send responses
           });
-        }, 1000), // 1 second interval
-      };
-    }
-  });
-}
+  
+          ws.on('close', () => {
+            console.log('Client disconnected');
+          });
+  
+          // Send current instrument prices to the newly connected client
+          sendPriceUpdates(ws);
+        });
+  
+        wss.on('listening', () => {
+          isServerRunning = true;
+        });
+  
+        wss.on('close', () => {
+          isServerRunning = false;
+        });
+  
+        // Process distinct tokens
+        distinctTokens.forEach((instrument: any) => {
+          const instrument_token = instrument;
+          if (!instrumentPrices[instrument_token]) {
+            let increasing = true;
+            let min_price = 10;
+            let max_price = 20;
+            instrumentPrices[instrument_token] = {
+              price: min_price, // Initial price
+              interval: setInterval(() => {
+                if (increasing) {
+                  if (instrumentPrices[instrument_token].price < max_price) {
+                    instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
+                  } else {
+                    increasing = false; // Change direction to decrease
+                  }
+                } else {
+                  if (instrumentPrices[instrument_token].price > min_price) {
+                    instrumentPrices[instrument_token].price -= 0.1; // Decrement price by 0.1
+                  } else {
+                    increasing = true; // Change direction to increase
+                  }
+                }
+  
+                // Send price updates to all connected clients
+                wss.clients.forEach((client: any) => {
+                  if (client.readyState === client.OPEN) {
+                    sendPriceUpdates(client);
+                  }
+                });
+              }, 1000), // 1 second interval
+            };
+          }
+        });
+      }
+    };
+  
+    // Initial check for distinct tokens
+    await checkDistinctTokens();
+  }
 // Function to clear all intervals related to instruments
 function clearIntervalAllInstruments() {
   Object.keys(instrumentPrices).forEach(function (instrument_token) {
