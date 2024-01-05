@@ -1,30 +1,59 @@
 import { POSTSessionToken, DELETESessionToken } from "./User/session-token";
 import { GETUserProfile } from "./User/user-profile";
 import { GETUserMarginSegments } from "./User/user-margins-segment";
-import { POSTOrderVariety, PUTOrderVariety, DELETEOrderVariety } from './Orders/orders-variety';
-import { GETOrders, GETOrderById, GETOrderByIdTrades, generateAndInsertRandomOrders } from './Orders/orders';
-import { GETTrades } from './Orders/trades';
-import { GETHoldings, calculateAndInsertHoldings } from './Portfolio/holdings';
-import { GETPositions } from './Portfolio/positions';
-import { PUTPositions } from './Portfolio/positions';
-import { GetInstruments, GetInstrumentsByExchange } from './Instruments/instruments';
-import { GetQuotes, GetQuotesOHLC, GetQuotesLTP } from './Quotes/quotes';
-import { GETCandleData } from './HistoricalData/candle-data';
-import { POSTMFOrders, DELETEMFOrderById, GETMFOrders, GETMFOrdersById} from './MutualFunds/orders';
-import { POSTMFSips, PUTMFSipsByOrderId, DELETEMFSipsByOrderId, GETMFSips, GETMFSipsByOrderId } from "./MutualFunds/sips";
+import {
+  POSTOrderVariety,
+  PUTOrderVariety,
+  DELETEOrderVariety,
+} from "./Orders/orders-variety";
+import {
+  GETOrders,
+  GETOrderById,
+  GETOrderByIdTrades,
+  generateAndInsertRandomOrders,
+} from "./Orders/orders";
+import { GETTrades } from "./Orders/trades";
+import { GETHoldings, calculateAndInsertHoldings } from "./Portfolio/holdings";
+import { GETPositions } from "./Portfolio/positions";
+import { PUTPositions } from "./Portfolio/positions";
+import {
+  GetInstruments,
+  GetInstrumentsByExchange,
+} from "./Instruments/instruments";
+import { GetQuotes, GetQuotesOHLC, GetQuotesLTP } from "./Quotes/quotes";
+import { GETCandleData } from "./HistoricalData/candle-data";
+import {
+  POSTMFOrders,
+  DELETEMFOrderById,
+  GETMFOrders,
+  GETMFOrdersById,
+} from "./MutualFunds/orders";
+import {
+  POSTMFSips,
+  PUTMFSipsByOrderId,
+  DELETEMFSipsByOrderId,
+  GETMFSips,
+  GETMFSipsByOrderId,
+} from "./MutualFunds/sips";
 import { GETMFHoldings } from "./MutualFunds/holdings";
 import { GETMFInstruments } from "./MutualFunds/instruments";
-import { DELETEGTTtriggerById, PUTGTTtriggerById, GETGTTtriggerById, GETGTTtrigger, POSTGTTtrigger } from "./GTT/triggers";
-const pool = require('./db');
-
+import {
+  DELETEGTTtriggerById,
+  PUTGTTtriggerById,
+  GETGTTtriggerById,
+  GETGTTtrigger,
+  POSTGTTtrigger,
+} from "./GTT/triggers";
+const pool = require("./db");
 
 const UnderContruction = (request: any, response: any) => {
-    response.status(503).jsonp({
-        "COLLABORATION-NEEDED": "Please contibute the API response https://github.com/nordible/zerodha-sandbox/pulls"
-    });
-}
+  response.status(503).jsonp({
+    "COLLABORATION-NEEDED":
+      "Please contibute the API response https://github.com/nordible/zerodha-sandbox/pulls",
+  });
+};
 
-const WebSocket = require('ws');
+const WebSocket = require("ws");
 var wss: any;
 interface InstrumentPrice {
   price: number;
@@ -45,7 +74,7 @@ function sendPriceUpdates(ws: any) {
       last_price: currentPrice,
       timestamp: Date.now(),
     };
-    
+
     // Check if the WebSocket connection is open before sending
     if (ws.readyState === ws.OPEN) {
       ws.send(JSON.stringify(response));
@@ -53,6 +82,7 @@ function sendPriceUpdates(ws: any) {
   });
 }
 async function getDistinctInstrumentTokensForUser() {
+  let tokens = [];
   const client = await pool.connect();
   const userQuery = await client.query(
     `SELECT DISTINCT orders.instrument_token 
@@ -60,86 +90,97 @@ async function getDistinctInstrumentTokensForUser() {
     INNER JOIN portfolio_positions ON orders.id = portfolio_positions.order_id`
   );
   // Extract distinct instrument tokens from the userQuery result
-  const distinctInstrumentTokens = userQuery.rows.map((row: any) => row.instrument_token);
-  return distinctInstrumentTokens;
+  tokens = userQuery.rows.map((row: any) => row.instrument_token);
+
+  if (tokens.length === 0) {
+    const userQueryHoldings = await client.query(
+      `SELECT DISTINCT orders.instrument_token 
+      FROM orders 
+      INNER JOIN portfolio_holdings ON orders.id = portfolio_holdings.order_id`
+    );
+
+    tokens = userQueryHoldings.rows.map((row: any) => row.instrument_token);
   }
-  async function startWebSocketServer() {
-    let retryInterval: any;
-    
-    const checkDistinctTokens = async () => {
-      const distinctTokens = await getDistinctInstrumentTokensForUser();
-      if (!distinctTokens || distinctTokens.length === 0) {
-        // Retry after 1 second if distinct tokens are not found or length is 0
-        retryInterval = setTimeout(checkDistinctTokens, 1000);
-      } else {
-        // Once distinct tokens are available, clear the retry interval
-        clearTimeout(retryInterval);
-        
-        // Start WebSocket server and process distinct tokens
-        wss = new WebSocket.Server({ port: 8082 });
-  
-        wss.on('connection', (ws: any) => {
-          ws.on('message', (message: any) => {
-            console.log('Received message:', message);
-            // Process the message and potentially send responses
-          });
-  
-          ws.on('close', () => {
-            console.log('Client disconnected');
-          });
-  
-          // Send current instrument prices to the newly connected client
-          sendPriceUpdates(ws);
+
+  return tokens;
+}
+async function startWebSocketServer() {
+  let retryInterval: any;
+
+  const checkDistinctTokens = async () => {
+    const distinctTokens = await getDistinctInstrumentTokensForUser();
+    if (!distinctTokens || distinctTokens.length === 0) {
+      // Retry after 1 second if distinct tokens are not found or length is 0
+      retryInterval = setTimeout(checkDistinctTokens, 1000);
+    } else {
+      // Once distinct tokens are available, clear the retry interval
+      clearTimeout(retryInterval);
+
+      // Start WebSocket server and process distinct tokens
+      wss = new WebSocket.Server({ port: 8082 });
+
+      wss.on("connection", (ws: any) => {
+        ws.on("message", (message: any) => {
+          console.log("Received message:", message);
+          // Process the message and potentially send responses
         });
-  
-        wss.on('listening', () => {
-          isServerRunning = true;
+
+        ws.on("close", () => {
+          console.log("Client disconnected");
         });
-  
-        wss.on('close', () => {
-          isServerRunning = false;
-        });
-  
-        // Process distinct tokens
-        distinctTokens.forEach((instrument: any) => {
-          const instrument_token = instrument;
-          if (!instrumentPrices[instrument_token]) {
-            let increasing = true;
-            let min_price = 10;
-            let max_price = 20;
-            instrumentPrices[instrument_token] = {
-              price: min_price, // Initial price
-              interval: setInterval(() => {
-                if (increasing) {
-                  if (instrumentPrices[instrument_token].price < max_price) {
-                    instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
-                  } else {
-                    increasing = false; // Change direction to decrease
-                  }
+
+        // Send current instrument prices to the newly connected client
+        sendPriceUpdates(ws);
+      });
+
+      wss.on("listening", () => {
+        isServerRunning = true;
+      });
+
+      wss.on("close", () => {
+        isServerRunning = false;
+      });
+
+      // Process distinct tokens
+      distinctTokens.forEach((instrument: any) => {
+        const instrument_token = instrument;
+        if (!instrumentPrices[instrument_token]) {
+          let increasing = true;
+          let min_price = 10;
+          let max_price = 20;
+          instrumentPrices[instrument_token] = {
+            price: min_price, // Initial price
+            interval: setInterval(() => {
+              if (increasing) {
+                if (instrumentPrices[instrument_token].price < max_price) {
+                  instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
                 } else {
-                  if (instrumentPrices[instrument_token].price > min_price) {
-                    instrumentPrices[instrument_token].price -= 0.1; // Decrement price by 0.1
-                  } else {
-                    increasing = true; // Change direction to increase
-                  }
+                  increasing = false; // Change direction to decrease
                 }
-  
-                // Send price updates to all connected clients
-                wss.clients.forEach((client: any) => {
-                  if (client.readyState === client.OPEN) {
-                    sendPriceUpdates(client);
-                  }
-                });
-              }, 1000), // 1 second interval
-            };
-          }
-        });
-      }
-    };
-  
-    // Initial check for distinct tokens
-    await checkDistinctTokens();
-  }
+              } else {
+                if (instrumentPrices[instrument_token].price > min_price) {
+                  instrumentPrices[instrument_token].price -= 0.1; // Decrement price by 0.1
+                } else {
+                  increasing = true; // Change direction to increase
+                }
+              }
+
+              // Send price updates to all connected clients
+              wss.clients.forEach((client: any) => {
+                if (client.readyState === client.OPEN) {
+                  sendPriceUpdates(client);
+                }
+              });
+            }, 1000), // 1 second interval
+          };
+        }
+      });
+    }
+  };
+
+  // Initial check for distinct tokens
+  await checkDistinctTokens();
+}
 // Function to clear all intervals related to instruments
 function clearIntervalAllInstruments() {
   Object.keys(instrumentPrices).forEach(function (instrument_token) {
@@ -151,104 +192,112 @@ function isWebSocketActive(wss: any) {
   return wss && wss.readyState === wss.OPEN;
 }
 export const router = (server: any) => {
+  // User routes
+  server.post("/session/token", POSTSessionToken);
+  server.post("/user/profile", GETUserProfile);
+  server.get("/user/margins", GETUserMarginSegments);
+  server.get("/user/margins/:segment", GETUserMarginSegments);
+  server.delete("/session/token", DELETESessionToken);
 
-    // User routes
-    server.post('/session/token', POSTSessionToken);
-    server.post('/user/profile', GETUserProfile);
-    server.get('/user/margins', GETUserMarginSegments);
-    server.get('/user/margins/:segment', GETUserMarginSegments);
-    server.delete('/session/token', DELETESessionToken);
+  // Orders routes
+  server.post("/orders/:variety", POSTOrderVariety);
+  server.put("/orders/:variety/:order_id", PUTOrderVariety);
+  server.delete("/orders/:variety/:order_id", DELETEOrderVariety);
+  server.get("/orders", GETOrders);
+  server.get("/generate-orders", generateAndInsertRandomOrders);
+  server.get("/orders/:order_id", GETOrderById);
+  server.get("/trades", GETTrades);
+  server.get("/orders/:order_id/trades", GETOrderByIdTrades);
 
-    // Orders routes
-    server.post('/orders/:variety', POSTOrderVariety);
-    server.put('/orders/:variety/:order_id', PUTOrderVariety);
-    server.delete('/orders/:variety/:order_id', DELETEOrderVariety);
-    server.get('/orders', GETOrders);
-    server.get('/generate-orders', generateAndInsertRandomOrders);
-    server.get('/orders/:order_id', GETOrderById);
-    server.get('/trades', GETTrades);
-    server.get('/orders/:order_id/trades', GETOrderByIdTrades);
+  // Portfolio
+  server.get("/portfolio/holdings", GETHoldings);
+  server.get("/portfolio/move-holdings", async (req: any, res: any) => {
+    try {
+      const client = await pool.connect();
+      await calculateAndInsertHoldings(client);
+      client.release();
+      res
+        .status(200)
+        .json({ message: "Holdings moved and calculated successfully!" });
+    } catch (error) {
+      console.error("Error:", error);
+      res.status(500).send("Internal Server Error");
+    }
+  });
+  server.get("/portfolio/positions", GETPositions);
+  server.put("/portfolio/positions", PUTPositions);
 
-    // Portfolio
-    server.get('/portfolio/holdings', GETHoldings);
-    server.get('/portfolio/move-holdings', async (req: any, res: any) => {
-      try {
-        const client = await pool.connect();
-        await calculateAndInsertHoldings(client);
-        client.release();
-        res.status(200).json({ message: 'Holdings moved and calculated successfully!' });
-      } catch (error) {
-        console.error('Error:', error);
-        res.status(500).send('Internal Server Error');
-      }
-    });
-    server.get('/portfolio/positions', GETPositions);
-    server.put('/portfolio/positions', PUTPositions);
+  // Market quotes and instruments
+  server.get("/instruments", GetInstruments);
+  server.get("/instruments/:exchange", GetInstrumentsByExchange);
+  server.get("/quote", GetQuotes);
+  server.get("/quote/ohlc", GetQuotesOHLC);
+  server.get("/quote/ltp", GetQuotesLTP);
 
-    // Market quotes and instruments
-    server.get('/instruments', GetInstruments);
-    server.get('/instruments/:exchange', GetInstrumentsByExchange);
-    server.get('/quote', GetQuotes);
-    server.get('/quote/ohlc', GetQuotesOHLC);
-    server.get('/quote/ltp', GetQuotesLTP);
+  // Historical candle data
+  server.get(
+    "/instruments/historical/:instrument_token/:interval",
+    GETCandleData
+  );
 
-    // Historical candle data
-    server.get('/instruments/historical/:instrument_token/:interval', GETCandleData);
+  // Mutual funds
+  server.post("/mf/orders", POSTMFOrders);
+  server.delete("/mf/orders/:order_id", DELETEMFOrderById);
+  server.get("/mf/orders", GETMFOrders);
+  server.get("/mf/orders/:order_id", GETMFOrdersById);
+  server.post("/mf/sips", POSTMFSips);
+  server.put("/mf/sips/:order_id", PUTMFSipsByOrderId);
+  server.delete("/mf/sips/:order_id", DELETEMFSipsByOrderId);
+  server.get("/mf/sips/", GETMFSips);
+  server.get("/mf/sips/:order_id", GETMFSipsByOrderId);
+  server.get("/mf/holdings", GETMFHoldings);
+  server.get("/mf/instruments", GETMFInstruments);
 
-    // Mutual funds
-    server.post('/mf/orders', POSTMFOrders);
-    server.delete('/mf/orders/:order_id', DELETEMFOrderById);
-    server.get('/mf/orders', GETMFOrders);
-    server.get('/mf/orders/:order_id', GETMFOrdersById);
-    server.post('/mf/sips', POSTMFSips);
-    server.put('/mf/sips/:order_id', PUTMFSipsByOrderId);
-    server.delete('/mf/sips/:order_id', DELETEMFSipsByOrderId);
-    server.get('/mf/sips/', GETMFSips);
-    server.get('/mf/sips/:order_id', GETMFSipsByOrderId);
-    server.get('/mf/holdings', GETMFHoldings);
-    server.get('/mf/instruments', GETMFInstruments);
+  // GTT - Good Till Triggered orders
+  server.post("/gtt/triggers", POSTGTTtrigger);
+  server.get("/gtt/triggers", GETGTTtrigger);
+  server.get("/gtt/triggers/:id", GETGTTtriggerById);
+  server.put("/gtt/triggers/:id", PUTGTTtriggerById);
+  server.delete("/gtt/triggers/:id", DELETEGTTtriggerById);
+  server.post("/start-websocket", (req: any, res: any) => {
+    if (isServerRunning) {
+      return res
+        .status(200)
+        .json({ message: "WebSocket server is already running" });
+    }
 
-    // GTT - Good Till Triggered orders
-    server.post('/gtt/triggers', POSTGTTtrigger);
-    server.get('/gtt/triggers', GETGTTtrigger);
-    server.get('/gtt/triggers/:id', GETGTTtriggerById);
-    server.put('/gtt/triggers/:id', PUTGTTtriggerById);
-    server.delete('/gtt/triggers/:id', DELETEGTTtriggerById);
-    server.post('/start-websocket', (req: any, res: any) => {
-      if (isServerRunning) {
-        return res.status(200).json({ message: 'WebSocket server is already running' });
-      }
-    
-      if (!req.body || !Array.isArray(req.body)) {
-        return res.status(400).send('Invalid instruments data');
-      }
-      startWebSocketServer();
-      isServerRunning = true;
-      res.status(200).json({ message: 'WebSocket server started successfully' });
-    });
-    
-    server.post('/stop-websocket', function(req: any, res: any) {
-      if (wss) {
-        wss.close((err: any) => {
-          if (err) {
-            console.error('Error closing WebSocket server:', err);
-            res.status(500).json({ message: 'Error stopping WebSocket server' });
-          } else {
-            wss = undefined; // Reset WebSocket server instance
-            clearIntervalAllInstruments(); // Clear all intervals
-            res.status(200).json({ message: 'WebSocket server stopped successfully' });
-          }
-        });
-      } else {
-        res.status(200).json({ message: 'WebSocket server is not active' });
-      }
-    });
-    server.get('/check-websocket', function(req: any, res: any) {
-      if (isWebSocketActive(wss)) {
-        res.status(200).json({ message: 'WebSocket server is active' });
-      } else {
-        res.status(200).json({ message: 'WebSocket server is not active' });
-      }
-    });   
-    startWebSocketServer()
-}
+    if (!req.body || !Array.isArray(req.body)) {
+      return res.status(400).send("Invalid instruments data");
+    }
+    startWebSocketServer();
+    isServerRunning = true;
+    res.status(200).json({ message: "WebSocket server started successfully" });
+  });
+
+  server.post("/stop-websocket", function (req: any, res: any) {
+    if (wss) {
+      wss.close((err: any) => {
+        if (err) {
+          console.error("Error closing WebSocket server:", err);
+          res.status(500).json({ message: "Error stopping WebSocket server" });
+        } else {
+          wss = undefined; // Reset WebSocket server instance
+          clearIntervalAllInstruments(); // Clear all intervals
+          res
+            .status(200)
+            .json({ message: "WebSocket server stopped successfully" });
+        }
+      });
+    } else {
+      res.status(200).json({ message: "WebSocket server is not active" });
+    }
+  });
+  server.get("/check-websocket", function (req: any, res: any) {
+    if (isWebSocketActive(wss)) {
+      res.status(200).json({ message: "WebSocket server is active" });
+    } else {
+      res.status(200).json({ message: "WebSocket server is not active" });
+    }
+  });
+  startWebSocketServer();
+};

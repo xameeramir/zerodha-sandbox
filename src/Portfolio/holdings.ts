@@ -57,25 +57,25 @@ export const GETHoldings = async (request: any, response: any) => {
       instrument_token: row.instrument_token,
       isin: 0, // Replace with actual logic to calculate
       product: row.product,
-      price: row.price,
+      price: parseFloat(row.price),
       quantity: parseFloat(row.total_quantity), // Assuming the quantity is numeric, convert if necessary
       used_quantity: 0, // Replace with actual logic to calculate used_quantity
       t1_quantity: 0, // Replace with actual logic to calculate t1_quantity
       realised_quantity: parseFloat(row.total_quantity), // Assuming this is the same as the total_quantity
-      authorised_quantity: row.authorised_quantity,
-      authorised_date: row.authorised_date,
+      authorised_quantity: null,
+      authorised_date: null,
       opening_quantity: parseFloat(row.total_quantity), // Assuming this is the same as the total_quantity
       collateral_quantity: 0, // Replace with actual collateral_quantity
       collateral_type: '', // Replace with actual collateral_type
       discrepancy: false, // Replace with actual discrepancy logic
-      average_price: row.average_price,
-      last_price: row.close_price, // Assuming close_price is the last_price
-      close_price: row.close_price,
-      pnl: row.pnl,
+      average_price: parseFloat(row.average_price),
+      last_price: parseFloat(row.close_price), // Assuming close_price is the last_price
+      close_price: parseFloat(row.close_price),
+      pnl: parseFloat(row.pnl),
       day_change: row.day_change,
       day_change_percentage: row.day_change_percentage,
-    }));
-    
+    }));    
+    console.log(holdingsData);
     response.status(200).jsonp({
       "status": "success",
       "data": holdingsData,
