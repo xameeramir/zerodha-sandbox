@@ -16,35 +16,73 @@
     <p>Free sandbox for testing Zerodha's <a href="https://kite.trade/docs/connect/v3">Kite and Coin APIs</a></p>
   </div>
   <style>
-    .instrument-field {
+  .instrument-field {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .instrument-field input {
+    flex: 1;
+    margin-right: 5px;
+  }
+  .card-container {
       display: flex;
+      justify-content: center;
       align-items: center;
-      margin-bottom: 10px;
+      height: 100vh;
     }
 
-    .instrument-field input {
-      flex: 1;
-      margin-right: 5px;
+    .card-body {
+      text-align: center;
     }
 
     .glow-ball {
+      /* Existing styles for the glow indicator */
       width: 20px;
       height: 20px;
       border-radius: 50%;
       display: inline-block;
       margin-left: 10px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      transition: background-color 0.3s ease-in-out;
     }
+    .glow-ball.glowing {
+      animation: blinkGlow 1s infinite;
+    }
+
+    @keyframes blinkGlow {
+      0% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+
+  .btn-group {
+    display: inline-block; 
+    margin-bottom: 10px; 
+  }
   </style>
   <div class="container mt-4">
-    <form id="instrumentForm">
-      <!-- Input fields for instruments -->
-      <button type="submit" class="btn btn-success mb-2" id="startWebhook">Start Webhook</button>
-      <button type="button" class="btn btn-danger mb-2" id="stopWebhook" style="display: none;">Stop Webhook</button>
-      <button type="button" class="btn btn-primary mb-2" id="restartWebsocket">Restart WebSocket</button>
-      <div class="glow-ball" id="websocketStatus"></div>
-    </form>
-
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-body">
+              <form id="instrumentForm" class="d-flex flex-wrap align-items-center">
+                <button type="submit" class="btn btn-success me-2 mb-2" id="startWebhook">Start Webhook</button>
+                <button type="button" class="btn btn-danger me-2 mb-2" id="stopWebhook" style="display: none;">Stop Webhook</button>
+                <button type="button" class="btn btn-primary mb-2" id="restartWebsocket">Restart WebSocket</button>
+                <div class="glow-ball ms-2 mb-2" id="websocketStatus"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
     <div id="responseMessage" style="display: none;"></div>
   </div>
   <footer>&copy; <a href="https://nordible.com/">nordible</a></footer>
@@ -82,25 +120,27 @@
     });
     // Function to periodically check WebSocket status
     async function checkWebSocketStatus() {
-      try {
-        const response = await fetch(`${window.location.origin}/check-websocket`);
-        const {
-          status
-        } = await response.json();
-        const statusDiv = document.getElementById('websocketStatus');
-        if (status == true) {
-          statusDiv.style.backgroundColor = 'green';
-
-          document.getElementById('stopWebhook').style.display = 'block';
-        } else {
-          statusDiv.style.backgroundColor = 'red';
-          document.getElementById('stopWebhook').style.display = 'none';
-        }
-      } catch (error) {
-        console.error('Error while checking WebSocket status:', error);
+    try {
+      const response = await fetch(`${window.location.origin}/check-websocket`);
+      const { status } = await response.json();
+      const statusDiv = document.getElementById('websocketStatus');
+      
+      if (status) {
+        statusDiv.style.backgroundColor = 'green';
+        document.getElementById('startWebhook').style.display = 'none';
+        document.getElementById('stopWebhook').style.display = 'block';
+        statusDiv.classList.add('glowing');
+      } else {
+        statusDiv.style.backgroundColor = 'red';
+        document.getElementById('startWebhook').style.display = 'block';
+        document.getElementById('stopWebhook').style.display = 'none';
+        statusDiv.classList.remove('glowing');
       }
+    } catch (error) {
+      console.error('Error while checking WebSocket status:', error);
     }
-    setInterval(checkWebSocketStatus, 2000);
+  }
+  setInterval(checkWebSocketStatus, 2000);
 
     // Event listener for Restart WebSocket button
     document.getElementById('restartWebsocket').addEventListener('click', async function () {

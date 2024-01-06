@@ -269,7 +269,30 @@ export const router = (server: any) => {
     isServerRunning = true;
     res.status(200).json({ message: "WebSocket server started successfully" });
   });
-
+  server.get("/restart-websocket", (req: any, res: any) => {
+    if (isServerRunning) {
+      if (wss) {
+        wss.close((err: any) => {
+          if (err) {
+            console.error("Error closing WebSocket server:", err);
+            return res.status(500).json({ message: "Error stopping WebSocket server" });
+          }
+  
+          wss = undefined;
+          clearIntervalAllInstruments();
+          startWebSocketServer();
+          return res.status(200).json({ message: "WebSocket server restarted successfully" });
+        });
+      } else {
+        return res.status(200).json({ message: "WebSocket server is not active" });
+      }
+    } else {
+      startWebSocketServer();
+      isServerRunning = true;
+      return res.status(200).json({ message: "WebSocket server started successfully" });
+    }
+  });
+  
   server.get("/stop-websocket", function (req: any, res: any) {
     if (wss) {
       wss.close((err: any) => {
