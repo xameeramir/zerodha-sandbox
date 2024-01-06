@@ -55,7 +55,7 @@ const createUserTableAndInsertData = async () => {
         order_types: ['MARKET', 'LIMIT', 'SL', 'SL-M'],
         avatar_url: 'abc',
         api_key: 'SampleAPIKey',
-        secret_key: 'SampleAPISecret',
+        api_secret: 'SampleAPISecret',
         access_token: 'SampleAccessToken',
         public_token: 'SamplePublicToken',
         enctoken: 'SampleEncToken',
