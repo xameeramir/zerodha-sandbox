@@ -1,127 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <title>Zerodha APIs Test environment by nordible</title>
+  <title>Zerodha APIs Test environment</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" integrity="sha512-b2QcS5SsA8tZodcDtGRELiGv5SaKSk1vDHDaQRda0htPYWZ6046lr3kJ5bAAQdpV2mmA/4v0wQF9MyU6/pDIAg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.min.js" integrity="sha512-WW8/jxkELe2CAiE4LvQfwm1rajOS8PHasCCx+knHG0gBHt8EXxS6T6tJRTGuDQVnluuAvMxWF4j8SNFDKceLFg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
+
 <body>
-<div class="jumbotron text-center">
-  <h2>Zerodha APIs Test environment</h2>
-  <p>Free sandbox for testing Zerodha's <a href="https://kite.trade/docs/connect/v3">Kite and Coin APIs</a></p> 
-  APIs are mocked at this root URL <code>https://zerodha-sandbox.herokuapp.com/</code>
-</div>
-<style>
-  .instrument-field {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .instrument-field input {
-    flex: 1;
-    margin-right: 5px;
-  }
-</style>
-<div class="container mt-4">
-  <form id="instrumentForm">
-    <div id="instrumentFields">
-      <div class="form-row mb-2 instrument-field">
-        <input type="number" class="form-control" placeholder="Min Price" name="min_price[]" value="10">
-        <input type="number" class="form-control" placeholder="Max Price" name="max_price[]" value="20">
-      </div>
-    </div>
-    <button type="submit" class="btn btn-success mb-2" id="startWebhook">Start Webhook</button>
-    <button type="button" class="btn btn-danger mb-2" id="stopWebhook" style="display: none;">Stop Webhook</button>
-  </form>
-
-  <div id="responseMessage" style="display: none;"></div>
-</div>
-  <footer>&copy; <a href="https://nordible.com/">nordible</a></footer>
-</div>
-<script>
-  async function sendInstrumentsToWebSocket(instruments) {
-        try {
-          const response = await fetch('http://localhost:3000/start-websocket', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(instruments),
-          });
-
-          if (response.ok) {
-            document.getElementById('responseMessage').innerText = 'WebSocket server started successfully';
-            document.getElementById('responseMessage').className = 'alert alert-success';
-            document.getElementById('startWebhook').style.display = 'none';
-            document.getElementById('stopWebhook').style.display = 'block';
-          } else {
-            throw new Error('Failed to start WebSocket server');
-          }
-
-          const responseData = await response.json();
-          console.log('Response:', responseData);
-          // You can perform additional actions with the response if needed
-        } catch (error) {
-          document.getElementById('responseMessage').innerText = 'Failed to start WebSocket server';
-          document.getElementById('responseMessage').className = 'alert alert-danger';
-        }
-
-        document.getElementById('responseMessage').style.display = 'block';
-      }
-
-  // Function to handle the click event for stopping the WebSocket
-  document.getElementById('stopWebhook').addEventListener('click', async function () {
-    try {
-      const response = await fetch('http://localhost:3000/stop-websocket', {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        document.getElementById('responseMessage').innerText = 'WebSocket server stopped successfully';
-        document.getElementById('responseMessage').className = 'alert alert-success';
-      } else {
-        throw new Error('Failed to stop WebSocket server');
-      }
-    } catch (error) {
-      document.getElementById('responseMessage').innerText = 'Failed to stop WebSocket server';
-      document.getElementById('responseMessage').className = 'alert alert-danger';
+  <div class="jumbotron text-center">
+    <h2>Zerodha APIs Test environment</h2>
+    <p>Free sandbox for testing Zerodha's <a href="https://kite.trade/docs/connect/v3">Kite and Coin APIs</a></p>
+  </div>
+  <style>
+    .instrument-field {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
     }
 
-    document.getElementById('responseMessage').style.display = 'block';
-  });
-    // Form submission
-    $("#instrumentForm").submit(function(event) {
-  event.preventDefault();
+    .instrument-field input {
+      flex: 1;
+      margin-right: 5px;
+    }
 
-  var formData = $(this).serializeArray();
-  var instruments = [];
+    .glow-ball {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-left: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+  <div class="container mt-4">
+    <form id="instrumentForm">
+      <!-- Input fields for instruments -->
+      <button type="submit" class="btn btn-success mb-2" id="startWebhook">Start Webhook</button>
+      <button type="button" class="btn btn-danger mb-2" id="stopWebhook" style="display: none;">Stop Webhook</button>
+      <button type="button" class="btn btn-primary mb-2" id="restartWebsocket">Restart WebSocket</button>
+      <div class="glow-ball" id="websocketStatus"></div>
+    </form>
 
-  for (var i = 0; i < formData.length; i += 2) {
-    var instrumentObj = {
-      min_price: parseFloat(formData[i].value) || 10, 
-      max_price: parseFloat(formData[i + 1].value) || 20 
-    };
-    instruments.push(instrumentObj);
-  }
-  console.log("Posting to API:", instruments);
-  sendInstrumentsToWebSocket(instruments);
+    <div id="responseMessage" style="display: none;"></div>
+  </div>
+  <footer>&copy; <a href="https://nordible.com/">nordible</a></footer>
+  </div>
+  <script>
+    document.getElementById('startWebhook').addEventListener('click', async function () {
+      try {
+        const response = await fetch(window.location.origin + '/start-websocket', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
 
-  // Reset form after submission
-  $("#instrumentForm")[0].reset();
-});
-</script>
+        if (response.ok) {
+          document.getElementById('responseMessage').innerText = 'WebSocket server started successfully';
+          document.getElementById('responseMessage').className = 'alert alert-success';
+          document.getElementById('startWebhook').style.display = 'none';
+          document.getElementById('stopWebhook').style.display = 'block';
+        } else {
+          throw new Error('Failed to start WebSocket server');
+        }
 
+        const responseData = await response.json();
+        console.log('Response:', responseData);
+      } catch (error) {
+        document.getElementById('responseMessage').innerText = 'Failed to start WebSocket server';
+        document.getElementById('responseMessage').className = 'alert alert-danger';
+        document.getElementById('responseMessage').style.display = 'block';
+        return; // Exit the function in case of an error to prevent further execution
+      }
 
-<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-109226220-1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-109226220-1');
-</script>
+      // Display the response message block after successful execution (if no error occurred)
+      document.getElementById('responseMessage').style.display = 'block';
+    });
+    // Function to periodically check WebSocket status
+    async function checkWebSocketStatus() {
+      try {
+        const response = await fetch(`${window.location.origin}/check-websocket`);
+        const {
+          status
+        } = await response.json();
+        const statusDiv = document.getElementById('websocketStatus');
+        if (status == true) {
+          statusDiv.style.backgroundColor = 'green';
+
+          document.getElementById('stopWebhook').style.display = 'block';
+        } else {
+          statusDiv.style.backgroundColor = 'red';
+          document.getElementById('stopWebhook').style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error while checking WebSocket status:', error);
+      }
+    }
+    setInterval(checkWebSocketStatus, 2000);
+
+    // Event listener for Restart WebSocket button
+    document.getElementById('restartWebsocket').addEventListener('click', async function () {
+      try {
+        const response = await fetch(`${window.location.origin}/restart-websocket`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to start WebSocket server');
+        }
+      } catch (error) {
+        console.error('Failed to start WebSocket server:', error);
+      }
+    });
+
+    // Event listener for stopping the WebSocket
+    document.getElementById('stopWebhook').addEventListener('click', async function () {
+      try {
+        const response = await fetch(`${window.location.origin}/stop-websocket`, {
+          method: 'GET',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to stop WebSocket server');
+        }
+      } catch (error) {
+        console.error('Failed to stop WebSocket server:', error);
+      }
+    });
+  </script>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-109226220-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-109226220-1');
+  </script>
 </body>
+
 </html>

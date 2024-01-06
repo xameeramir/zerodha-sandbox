@@ -259,30 +259,26 @@ export const router = (server: any) => {
   server.get("/gtt/triggers/:id", GETGTTtriggerById);
   server.put("/gtt/triggers/:id", PUTGTTtriggerById);
   server.delete("/gtt/triggers/:id", DELETEGTTtriggerById);
-  server.post("/start-websocket", (req: any, res: any) => {
+  server.get("/start-websocket", (req: any, res: any) => {
     if (isServerRunning) {
       return res
         .status(200)
         .json({ message: "WebSocket server is already running" });
-    }
-
-    if (!req.body || !Array.isArray(req.body)) {
-      return res.status(400).send("Invalid instruments data");
     }
     startWebSocketServer();
     isServerRunning = true;
     res.status(200).json({ message: "WebSocket server started successfully" });
   });
 
-  server.post("/stop-websocket", function (req: any, res: any) {
+  server.get("/stop-websocket", function (req: any, res: any) {
     if (wss) {
       wss.close((err: any) => {
         if (err) {
           console.error("Error closing WebSocket server:", err);
           res.status(500).json({ message: "Error stopping WebSocket server" });
         } else {
-          wss = undefined; // Reset WebSocket server instance
-          clearIntervalAllInstruments(); // Clear all intervals
+          wss = undefined; 
+          clearIntervalAllInstruments();
           res
             .status(200)
             .json({ message: "WebSocket server stopped successfully" });
@@ -294,9 +290,9 @@ export const router = (server: any) => {
   });
   server.get("/check-websocket", function (req: any, res: any) {
     if (isWebSocketActive(wss)) {
-      res.status(200).json({ message: "WebSocket server is active" });
+      res.status(200).json({ status: true, message: "WebSocket server is active" });
     } else {
-      res.status(200).json({ message: "WebSocket server is not active" });
+      res.status(200).json({ status: false, message: "WebSocket server is not active" });
     }
   });
   startWebSocketServer();
