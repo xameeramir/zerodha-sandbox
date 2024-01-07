@@ -104,7 +104,7 @@ async function getDistinctInstrumentTokensForUser() {
 
   return tokens;
 }
-async function startWebSocketServer() {
+export async function startWebSocketServer() {
   let retryInterval: any;
 
   const checkDistinctTokens = async () => {
@@ -122,7 +122,6 @@ async function startWebSocketServer() {
       wss.on("connection", (ws: any) => {
         ws.on("message", (message: any) => {
           console.log("Received message:", message);
-          // Process the message and potentially send responses
         });
 
         ws.on("close", () => {
@@ -182,7 +181,7 @@ async function startWebSocketServer() {
   await checkDistinctTokens();
 }
 // Function to clear all intervals related to instruments
-function clearIntervalAllInstruments() {
+export function clearIntervalAllInstruments() {
   Object.keys(instrumentPrices).forEach(function (instrument_token) {
     clearInterval(instrumentPrices[instrument_token].interval);
     delete instrumentPrices[instrument_token];
@@ -191,6 +190,30 @@ function clearIntervalAllInstruments() {
 function isWebSocketActive(wss: any) {
   return wss && wss.readyState === wss.OPEN;
 }
+
+export async function restartWebSocketServer() {
+  if (isServerRunning) {
+    if (wss) {
+      wss.close((err: any) => {
+        if (err) {
+          console.error("Error closing WebSocket server:", err);
+        }
+
+        wss = undefined;
+        clearIntervalAllInstruments();
+        startWebSocketServer();
+        console.log("WebSocket server restarted successfully");
+      });
+    } else {
+      console.error("WebSocket server is not active" );
+    }
+  } else {
+    startWebSocketServer();
+    isServerRunning = true;
+    console.log("WebSocket server started successfully");
+  }
+}
+
 export const router = (server: any) => {
   // User routes
   server.post("/session/token", POSTSessionToken);
