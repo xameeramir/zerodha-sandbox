@@ -322,14 +322,12 @@ const createOrdersTable = async (client: any) => {
     let client;
     try {
       client = await pool.connect();
-  
+      await createInstrumentsTable(client);
+      await createGTTTriggersTable(client);
       await createUserTableAndInsertData(client);
       await createOrdersTable(client);
       await createPortfolioPositionsTable(client);
       await createPortfolioHoldingsTable(client);
-      await createGTTTriggersTable(client);
-      await createInstrumentsTable(client);
-  
       // Set up the server and other functionalities after all database operations are done
       server.use(bodyParser.urlencoded({ extended: true }));
       router(server);
