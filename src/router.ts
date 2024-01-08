@@ -106,7 +106,7 @@ async function getDistinctInstrumentTokensForUser(client: any) {
 export async function startWebSocketServer() {
   let retryInterval: any;
   const client = await pool.connect();
-
+  wss = new WebSocket.Server({ port: 8082 });
   const checkDistinctTokens = async () => {
     const distinctTokens = await getDistinctInstrumentTokensForUser(client);
     if (!distinctTokens || distinctTokens.length === 0) {
@@ -115,10 +115,6 @@ export async function startWebSocketServer() {
     } else {
       // Once distinct tokens are available, clear the retry interval
       clearTimeout(retryInterval);
-
-      // Start WebSocket server and process distinct tokens
-      wss = new WebSocket.Server({ port: 8082 });
-
       wss.on("connection", (ws: any) => {
         ws.on("message", (message: any) => {
           console.log("Received message:", message);
@@ -177,8 +173,9 @@ export async function startWebSocketServer() {
     }
   };
 
-  // Initial check for distinct tokens
-  await checkDistinctTokens();
+  const interval = setInterval(async () => {
+    await checkDistinctTokens();
+  }, 10000); //  10 seconds check
 }
 // Function to clear all intervals related to instruments
 export function clearIntervalAllInstruments() {
