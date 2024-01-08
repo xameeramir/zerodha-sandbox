@@ -81,9 +81,8 @@ function sendPriceUpdates(ws: any) {
     }
   });
 }
-async function getDistinctInstrumentTokensForUser() {
+async function getDistinctInstrumentTokensForUser(client: any) {
   let tokens = [];
-  const client = await pool.connect();
   const userQuery = await client.query(
     `SELECT DISTINCT orders.instrument_token 
     FROM orders 
@@ -106,9 +105,10 @@ async function getDistinctInstrumentTokensForUser() {
 }
 export async function startWebSocketServer() {
   let retryInterval: any;
+  const client = await pool.connect();
 
   const checkDistinctTokens = async () => {
-    const distinctTokens = await getDistinctInstrumentTokensForUser();
+    const distinctTokens = await getDistinctInstrumentTokensForUser(client);
     if (!distinctTokens || distinctTokens.length === 0) {
       // Retry after 1 second if distinct tokens are not found or length is 0
       retryInterval = setTimeout(checkDistinctTokens, 1000);
