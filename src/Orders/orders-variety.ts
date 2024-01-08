@@ -123,7 +123,12 @@ export const POSTOrderVariety = async (request: any, response: any) => {
     // After inserting the order, call the function to calculate and insert positions
     await calculateAndInsertPositions(client, orderID);
     simulateDelayedPostback(orderID)
-
+    try {
+      const response = await axios.get(process.env.WEBSOCKET_RESTART_URL);
+      console.log('WebSocket restarted:', response.data);
+    } catch (error) {
+      console.error('Error restarting WebSocket:', error);
+    }
     response.status(200).jsonp({
       status: 'success',
       data: {
