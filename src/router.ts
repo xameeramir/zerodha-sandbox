@@ -105,8 +105,10 @@ async function getDistinctInstrumentTokensForUser(client: any) {
 }
 export async function startWebSocketServer() {
   let retryInterval: any;
+  const MAX_LISTENERS = 15;
   const client = await pool.connect();
   wss = new WebSocket.Server({ port: 8082 });
+  wss.setMaxListeners(MAX_LISTENERS);
   const checkDistinctTokens = async () => {
     const distinctTokens = await getDistinctInstrumentTokensForUser(client);
     if (!distinctTokens || distinctTokens.length === 0) {
@@ -122,6 +124,7 @@ export async function startWebSocketServer() {
 
         ws.on("close", () => {
           console.log("Client disconnected");
+          ws.removeAllListeners();
         });
 
         // Send current instrument prices to the newly connected client
