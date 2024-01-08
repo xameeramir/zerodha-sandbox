@@ -9,10 +9,8 @@ const pool = require('./db');
 const bodyParser = require('body-parser');
 import { generateRandomOrders } from './Orders/orders'
 
-const createUserTableAndInsertData = async () => {
+const createUserTableAndInsertData = async (client: any) => {
   try {
-    const client = await pool.connect();
-
     // Create users table if it doesn't exist
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -74,13 +72,11 @@ const createUserTableAndInsertData = async () => {
     } else {
       console.log('Users table already contains data. Skipping creation and insertion.');
     }
-
-    client.release();
   } catch (error) {
     console.error('Error creating users table:', error);
   }
 };
-async function checkInstrumentsTable() {
+async function checkInstrumentsTable(client: any) {
   try {
     const tableCheckQuery = `
       SELECT EXISTS (
@@ -90,7 +86,7 @@ async function checkInstrumentsTable() {
       )
     `;
 
-    const result = await pool.query(tableCheckQuery);
+    const result = await client.query(tableCheckQuery);
     return result.rows[0].exists;
   } catch (error) {
     console.error('Error checking table existence:', error);
@@ -98,9 +94,9 @@ async function checkInstrumentsTable() {
   }
 }
 // Function to create the instruments table
-async function createInstrumentsTable() {
+async function createInstrumentsTable(client: any) {
   try {
-    const tableExists = await checkInstrumentsTable();
+    const tableExists = await checkInstrumentsTable(client);
     if (!tableExists) {
       const createTableQuery = `
         CREATE TABLE instruments (
@@ -119,7 +115,7 @@ async function createInstrumentsTable() {
         )
       `;
 
-      await pool.query(createTableQuery);
+      await client.query(createTableQuery);
       console.log('Instruments table created successfully.');
     } else {
       console.log('Instruments table already exists.');
@@ -127,7 +123,7 @@ async function createInstrumentsTable() {
 
     // Check if the table has entries
     const tableEntriesQuery = 'SELECT COUNT(*) FROM instruments';
-    const entriesResult = await pool.query(tableEntriesQuery);
+    const entriesResult = await client.query(tableEntriesQuery);
     const entriesCount = parseInt(entriesResult.rows[0].count, 10);
 
     if (entriesCount > 0) {
@@ -137,7 +133,7 @@ async function createInstrumentsTable() {
       const filePath = path.join(__dirname, '../dumps', 'instruments.sql');
       const sql = fs.readFileSync(filePath).toString();
 
-      await pool.query(sql);
+      await client.query(sql);
       console.log('Data imported successfully.');
     }
   } catch (error) {
@@ -145,9 +141,8 @@ async function createInstrumentsTable() {
   }
 }
 
-const createOrdersTable = async () => {
+const createOrdersTable = async (client: any) => {
     try {
-      const client = await pool.connect();
         // If no entries exist, create the table and generate random orders
         await client.query(`
           CREATE TABLE IF NOT EXISTS orders (
@@ -197,16 +192,13 @@ const createOrdersTable = async () => {
       } else {
         console.log('Orders table already contains data. Skipping creation and insertion.');
       }
-  
-      client.release();
     } catch (error) {
       console.error('Error creating orders table:', error);
     }
   };
   
-  const createGTTTriggersTable = async () => {
+  const createGTTTriggersTable = async (client: any) => {
     try {
-      const client = await pool.connect();
   
       // Check if the gtt_triggers table exists
       const checkTableQuery = 'SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1)';
@@ -256,17 +248,13 @@ const createOrdersTable = async () => {
       } else {
         console.log('GTT Triggers table already exists. Skipping creation and insertion.');
       }
-  
-      client.release();
     } catch (error) {
       console.error('Error creating GTT Triggers table:', error);
     }
   };
 
-  const createPortfolioPositionsTable = async () => {
+  const createPortfolioPositionsTable = async (client: any) => {
     try {
-      const client = await pool.connect();
-  
       // Check if the portfolio_positions table exists
       const checkTableQuery = 'SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1)';
       const tableExists = await client.query(checkTableQuery, ['portfolio_positions']);
@@ -294,17 +282,13 @@ const createOrdersTable = async () => {
       } else {
         console.log('Portfolio Positions table already exists. Skipping creation.');
       }
-  
-      client.release();
     } catch (error) {
       console.error('Error creating Portfolio Positions table:', error);
     }
   };
   
-  const createPortfolioHoldingsTable = async () => {
+  const createPortfolioHoldingsTable = async (client: any) => {
     try {
-      const client = await pool.connect();
-  
       // Check if the portfolio_holdings table exists
       const checkTableQuery = 'SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1)';
       const tableExists = await client.query(checkTableQuery, ['portfolio_holdings']);
@@ -330,32 +314,46 @@ const createOrdersTable = async () => {
       } else {
         console.log('Portfolio Holdings table already exists. Skipping creation.');
       }
-  
-      client.release();
     } catch (error) {
       console.error('Error creating Portfolio Holdings table:', error);
     }
   };
-// Call functions in a sequential order to create tables
-createUserTableAndInsertData()
-  .then(() => createOrdersTable())
-  .then(() => createPortfolioPositionsTable())
-  .then(() => createPortfolioHoldingsTable())
-  .then(() => createGTTTriggersTable())
-  .then(() => createInstrumentsTable())
-  .then(() => {
-    server.use(bodyParser.urlencoded({ extended: true }));
-    router(server);
-    const path = require('path');
-    const publicFolder = path.join(__dirname, '../');
-    server.use(express.static(path.join(__dirname, '../')));
-    server.get('/', (req: any, res: any) => {
-      res.sendFile(path.join(__dirname, '../index.html'));
-    });
-    server.use('/', express.static(publicFolder));
-    server.use(cors());
-    server.listen(port, () => {
-      console.log(`Mock server is running at PORT ${port}\nFree sandbox for testing Zerodha's Kite and Coin APIs\nLearn more https://nordible.com/zerodha-sandbox/\n\u00a9 nordible ${new Date().getFullYear()}`);
-    });
-  })
-  .catch((err) => console.error('Error:', err));
+  const performDatabaseOperations = async () => {
+    let client;
+    try {
+      client = await pool.connect();
+  
+      await createUserTableAndInsertData(client);
+      await createOrdersTable(client);
+      await createPortfolioPositionsTable(client);
+      await createPortfolioHoldingsTable(client);
+      await createGTTTriggersTable(client);
+      await createInstrumentsTable(client);
+  
+      // Set up the server and other functionalities after all database operations are done
+      server.use(bodyParser.urlencoded({ extended: true }));
+      router(server);
+      const path = require('path');
+      const publicFolder = path.join(__dirname, '../');
+      server.use(express.static(path.join(__dirname, '../')));
+      server.get('/', (req: any, res: any) => {
+        res.sendFile(path.join(__dirname, '../index.html'));
+      });
+      server.use('/', express.static(publicFolder));
+      server.use(cors());
+      server.listen(port, () => {
+        console.log(`Mock server is running at PORT ${port}\nFree sandbox for testing Zerodha's Kite and Coin APIs\nLearn more https://nordible.com/zerodha-sandbox/\n\u00a9 nordible ${new Date().getFullYear()}`);
+      });
+    } catch (error) {
+      console.error('Error performing database operations:', error);
+    } finally {
+      if (client) {
+        client.release();
+        console.log('Database client released.');
+      }
+    }
+  };
+  
+  // Call the function to perform all database operations and start the server
+  performDatabaseOperations()
+    .catch((err) => console.error('Error:', err));
