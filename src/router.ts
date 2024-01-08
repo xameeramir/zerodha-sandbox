@@ -175,7 +175,7 @@ export async function startWebSocketServer() {
 
   const interval = setInterval(async () => {
     await checkDistinctTokens();
-  }, 10000); //  10 seconds check
+  }, 20000); //  20 seconds check
 }
 // Function to clear all intervals related to instruments
 export function clearIntervalAllInstruments() {
