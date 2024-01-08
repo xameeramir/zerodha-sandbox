@@ -179,6 +179,10 @@ export async function startWebSocketServer() {
 
   // Initial check for distinct tokens
   await checkDistinctTokens();
+  // Recheck tokens periodically (every 1 minutes in this example)
+  const recheckInterval = setInterval(async () => {
+    await checkDistinctTokens();
+    }, 1 * 60 * 1000); // 1 minutes (in milliseconds)
 }
 // Function to clear all intervals related to instruments
 export function clearIntervalAllInstruments() {
