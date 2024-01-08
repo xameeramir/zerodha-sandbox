@@ -2,7 +2,6 @@ const faker = require('faker');
 const pool = require('../db');
 const axios = require('axios');
 const { createHash } = require('crypto');
-import { restartWebSocketServer } from "../router";
 // Function to generate random order ID
 const generateRandomOrderID = (): string => {
   return faker.datatype.number().toString();
@@ -200,7 +199,6 @@ const calculateAndInsertPositions = async (client: any, orderID: any) => {
     const insertQuery = `
       INSERT INTO portfolio_positions (
         order_id,
-        instrument_token,
         average_price,
         close_price,
         value,
@@ -211,7 +209,6 @@ const calculateAndInsertPositions = async (client: any, orderID: any) => {
       )
       SELECT
         o.id AS order_id,
-        o.instrument_token,
         AVG(o.price) AS average_price,
         MAX(o.price) AS close_price,
         SUM(o.price * o.quantity) AS value,
@@ -228,7 +225,6 @@ const calculateAndInsertPositions = async (client: any, orderID: any) => {
     `;
 
     await client.query(insertQuery, [orderID]);
-    restartWebSocketServer()
     await client.query('COMMIT');
 
     console.log(`Positions calculated and inserted for order_id: ${orderID} successfully.`);
