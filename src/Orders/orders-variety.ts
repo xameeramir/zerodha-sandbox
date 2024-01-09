@@ -122,7 +122,8 @@ export const POSTOrderVariety = async (request: any, response: any) => {
     client.release();
     // After inserting the order, call the function to calculate and insert positions
     await calculateAndInsertPositions(client, orderID);
-    simulateDelayedPostback(orderID)
+    simulateDelayedPostback(client, orderID)
+
     response.status(200).jsonp({
       status: 'success',
       data: {
@@ -234,13 +235,12 @@ const calculateAndInsertPositions = async (client: any, orderID: any) => {
 
 const postback_url = process.env.POSTBACK_URL || 'http://localhost:8100/api/z-postback'
 
-async function simulateDelayedPostback(orderId: any) {
+async function simulateDelayedPostback(client:any, orderId: any) {
 try {
-  const client = await pool.connect();
-const orderQuery = await client.query(
-  `SELECT * FROM orders WHERE id = $1`,
-  [orderId]
-);
+  const orderQuery = await client.query(
+    `SELECT * FROM orders WHERE id = $1`,
+    [orderId]
+  );
   if (orderQuery.rows.length > 0) {
     const orderDetails = orderQuery.rows[0];
     const query = {
@@ -298,6 +298,8 @@ const orderQuery = await client.query(
   } else {
     console.log("Order ID not found or user not associated with the order.");
   }
+
+  client.release();
 } catch (error) {
   console.error("Error executing PostgreSQL query:", error);
 }
