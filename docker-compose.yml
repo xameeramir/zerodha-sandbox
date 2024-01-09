@@ -12,7 +12,6 @@ services:
       - DB_NAME=zerodha_db
       - DB_PASSWORD=zerodha_password
       - POSTBACK_URL=http://localhost:8100/api/z-postback
-      - WEBSOCKET_RESTART_URL=http://localhost:8100/restart-websocket
     depends_on:
       - postgres
   postgres:

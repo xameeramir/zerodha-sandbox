@@ -89,7 +89,7 @@ export const generateAndInsertRandomOrders = async (count: number) => {
       `, Object.values(order));
     }
 
-    client.release();
+    ;
     console.log(`${count} orders inserted into the database.`);
   } catch (error) {
     console.error('Error inserting orders into the database:', error);
@@ -118,7 +118,7 @@ export const GETOrders = async (request: any, response: any) => {
         "status": "error",
         "message": "Unauthorized access",
       });
-      client.release();
+      ;
       return;
     }
 
@@ -158,7 +158,7 @@ export const GETOrders = async (request: any, response: any) => {
       [user.id, ordersCount]
     );
 
-    client.release();
+    ;
 
     response.status(200).jsonp({
       "status": "success",
@@ -218,7 +218,7 @@ export const GETOrderById = async (request: any, response: any) => {
     // Fetch order data from the database based on the orderId
     const result = await client.query('SELECT * FROM orders WHERE id = $1', [orderId]);
 
-    client.release();
+    ;
 
     if (result.rows.length > 0) {
       response.status(200).jsonp({

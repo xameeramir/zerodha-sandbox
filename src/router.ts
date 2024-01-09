@@ -239,7 +239,7 @@ export const router = (server: any) => {
     try {
       const client = await pool.connect();
       await calculateAndInsertHoldings(client);
-      client.release();
+      ;
       res
         .status(200)
         .json({ message: "Holdings moved and calculated successfully!" });

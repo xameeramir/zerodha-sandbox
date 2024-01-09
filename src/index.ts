@@ -346,7 +346,7 @@ const createOrdersTable = async (client: any) => {
       console.error('Error performing database operations:', error);
     } finally {
       if (client) {
-        client.release();
+        ;
         console.log('Database client released.');
       }
     }

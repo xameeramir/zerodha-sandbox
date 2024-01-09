@@ -36,7 +36,7 @@ export const POSTOrderVariety = async (request: any, response: any) => {
         "status": "error",
         "message": "Unauthorized access",
       });
-      client.release();
+      ;
       return;
     }
     const {
@@ -72,7 +72,7 @@ export const POSTOrderVariety = async (request: any, response: any) => {
         top_10_trading_symbols: topTradingSymbols,
       });
 
-      client.release();
+      ;
       return;
     }
 
@@ -119,7 +119,7 @@ export const POSTOrderVariety = async (request: any, response: any) => {
         (new Date().toISOString())
       ]
     );
-    client.release();
+    ;
     // After inserting the order, call the function to calculate and insert positions
     await calculateAndInsertPositions(client, orderID);
     simulateDelayedPostback(client, orderID)
@@ -162,7 +162,7 @@ export const PUTOrderVariety = async (request: any, response: any) => {
     `, [order_type, quantity, price, trigger_price, disclosed_quantity, validity, orderID]);
 
     await calculateAndInsertPositions(client, orderID);
-    client.release();
+    ;
     response.status(200).jsonp({
       "status": "success",
       "data": {
@@ -299,7 +299,7 @@ try {
     console.log("Order ID not found or user not associated with the order.");
   }
 
-  client.release();
+  ;
 } catch (error) {
   console.error("Error executing PostgreSQL query:", error);
 }
