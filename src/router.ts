@@ -105,15 +105,15 @@ async function getDistinctInstrumentTokensForUser(client: any) {
 }
 export async function startWebSocketServer() {
   let retryInterval: any;
-  const MAX_LISTENERS = 15;
+  const MAX_LISTENERS = 30;
   const client = await pool.connect();
   wss = new WebSocket.Server({ port: 8082 });
   wss.setMaxListeners(MAX_LISTENERS);
   const checkDistinctTokens = async () => {
     const distinctTokens = await getDistinctInstrumentTokensForUser(client);
     if (!distinctTokens || distinctTokens.length === 0) {
-      // Retry after 1 second if distinct tokens are not found or length is 0
-      retryInterval = setTimeout(checkDistinctTokens, 1000);
+      // Retry after 2 second if distinct tokens are not found or length is 0
+      retryInterval = setTimeout(checkDistinctTokens, 2000);
     } else {
       // Once distinct tokens are available, clear the retry interval
       clearTimeout(retryInterval);
@@ -144,7 +144,7 @@ export async function startWebSocketServer() {
         const instrument_token = instrument;
         if (!instrumentPrices[instrument_token]) {
           let increasing = true;
-          let min_price = 10;
+          let min_price = 15;
           let max_price = 20;
           instrumentPrices[instrument_token] = {
             price: min_price, // Initial price
@@ -169,7 +169,7 @@ export async function startWebSocketServer() {
                   sendPriceUpdates(client);
                 }
               });
-            }, 1000), // 1 second interval
+            }, 2000), // 2 second interval
           };
         }
       });
@@ -177,6 +177,7 @@ export async function startWebSocketServer() {
   };
 
   const interval = setInterval(async () => {
+    clearIntervalAllInstruments();
     await checkDistinctTokens();
   }, 20000); //  20 seconds check
 }
