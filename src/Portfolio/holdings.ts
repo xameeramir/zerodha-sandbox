@@ -63,7 +63,7 @@ export const GETHoldings = async (request: any, response: any) => {
       t1_quantity: 0, // Replace with actual logic to calculate t1_quantity
       realised_quantity: parseFloat(row.total_quantity), // Assuming this is the same as the total_quantity
       authorised_quantity: 0,
-      authorised_date: 0,
+      authorised_date: '2021-06-08 00:00:00',
       opening_quantity: parseFloat(row.total_quantity), // Assuming this is the same as the total_quantity
       collateral_quantity: 0, // Replace with actual collateral_quantity
       collateral_type: '', // Replace with actual collateral_type
@@ -96,7 +96,7 @@ export const calculateAndInsertHoldings = async (client: any) => {
       SELECT DISTINCT o.id
       FROM orders o
       LEFT JOIN portfolio_holdings ph ON o.id = ph.order_id
-      WHERE ph.order_id IS NULL AND o.quantity != 0
+      WHERE o.quantity != 0
     `;
 
     const unprocessedOrdersResult = await client.query(unprocessedOrdersQuery);
