@@ -7,7 +7,6 @@ const generateRandomOrderID = (): string => {
   return faker.datatype.number().toString();
 };
 
-
 function hash(alg: any, data: any, salt:any, enc:any) {
     if (data == null) return data;
     salt = typeof salt == 'string' ? salt : '';
@@ -130,6 +129,7 @@ export const POSTOrderVariety = async (request: any, response: any) => {
         order_id: orderID,
       },
     });
+    client.release();
   } catch (error) {
     console.error('Error placing order:', error);
     response.status(500).jsonp({

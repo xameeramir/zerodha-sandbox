@@ -82,7 +82,7 @@ export const GETHoldings = async (request: any, response: any) => {
     });
     
 
-    ;
+    client.release();
   } catch (error) {
     console.error('Error retrieving holdings:', error);
     response.status(500).jsonp({ "status": "error", "message": "Internal server error" });
@@ -153,6 +153,7 @@ export const calculateAndInsertHoldings = async (client: any) => {
     }
 
     console.log("All unprocessed orders have been handled.");
+    client.release();
   } catch (error) {
     console.error('Error processing unprocessed orders:', error);
   }

@@ -90,7 +90,7 @@ export const GETPositions = async (request: any, response: any) => {
         "net": positionsData
       },
     });
-        ;
+    client.release();
       } catch (error) {
         console.error('Error retrieving positions:', error);
         response.status(500).jsonp({ "status": "error", "message": "Internal server error" });
@@ -118,6 +118,7 @@ export const PUTPositions = async (request: any, response: any) => {
       "status": "success",
       "data": true
     });
+    client.release();
   } catch (error) {
     console.error('Error inserting new positions:', error);
     response.status(500).jsonp({ "status": "error", "message": "Internal server error" });
