@@ -62,8 +62,8 @@ export const GETHoldings = async (request: any, response: any) => {
       used_quantity: 0, // Replace with actual logic to calculate used_quantity
       t1_quantity: 0, // Replace with actual logic to calculate t1_quantity
       realised_quantity: parseFloat(row.total_quantity), // Assuming this is the same as the total_quantity
-      authorised_quantity: null,
-      authorised_date: null,
+      authorised_quantity: 0,
+      authorised_date: 0,
       opening_quantity: parseFloat(row.total_quantity), // Assuming this is the same as the total_quantity
       collateral_quantity: 0, // Replace with actual collateral_quantity
       collateral_type: '', // Replace with actual collateral_type
