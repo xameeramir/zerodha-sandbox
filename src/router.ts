@@ -146,7 +146,7 @@ export async function startWebSocketServer() {
         if (!instrumentPrices[instrument_token]) {
           let increasing = true;
           let min_price = 10;
-          let max_price = 20;
+          let max_price = 15;
           instrumentPrices[instrument_token] = {
             price: min_price, // Initial price
             interval: setInterval(() => {
