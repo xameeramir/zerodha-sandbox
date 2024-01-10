@@ -96,7 +96,7 @@ export const calculateAndInsertHoldings = async (client: any) => {
       SELECT DISTINCT o.id
       FROM orders o
       LEFT JOIN portfolio_holdings ph ON o.id = ph.order_id
-      WHERE ph.order_id IS NULL
+      WHERE ph.order_id IS NULL AND o.quantity != 0
     `;
 
     const unprocessedOrdersResult = await client.query(unprocessedOrdersQuery);
