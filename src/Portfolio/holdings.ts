@@ -9,8 +9,8 @@ export const GETHoldings = async (request: any, response: any) => {
 
     const client = await pool.connect();
 
-     // Fetch user_id based on the provided api_key and access_token
-     const userQuery = await client.query(
+    // Fetch user_id based on the provided api_key and access_token
+    const userQuery = await client.query(
       'SELECT id FROM users WHERE api_key = $1 AND access_token = $2',
       [apiKey, accessToken]
     );
@@ -41,16 +41,17 @@ export const GETHoldings = async (request: any, response: any) => {
         FROM 
           portfolio_holdings ph 
         INNER JOIN 
-          orders o ON ph.order_id = o.id
+          orders o ON ph.instrument_token = o.instrument_token
         WHERE 
           o.user_id = $1
         GROUP BY 
-          o.instrument_token
+          o.instrument_token, ph.quantity
       `,
       values: [user.id],
     };
-    const holdingsResult = await client.query(holdingsQuery);
     
+    const holdingsResult = await client.query(holdingsQuery);
+
     const holdingsData = holdingsResult.rows.map((row: any) => ({
       tradingsymbol: row.tradingsymbol,
       exchange: row.exchange,
@@ -74,13 +75,13 @@ export const GETHoldings = async (request: any, response: any) => {
       pnl: parseFloat(row.pnl),
       day_change: row.day_change,
       day_change_percentage: row.day_change_percentage,
-    }));    
+    }));
     console.log(holdingsData);
     response.status(200).jsonp({
       "status": "success",
       "data": holdingsData,
     });
-    
+
 
     client.release();
   } catch (error) {
@@ -91,70 +92,79 @@ export const GETHoldings = async (request: any, response: any) => {
 
 export const calculateAndInsertHoldings = async (client: any) => {
   try {
-    // Fetch order IDs that are not present in portfolio_holdings
+    // Fetch instrument_tokens that are not present in portfolio_holdings
     const unprocessedOrdersQuery = `
-      SELECT DISTINCT o.id
+      SELECT DISTINCT o.instrument_token
       FROM orders o
-      LEFT JOIN portfolio_holdings ph ON o.id = ph.order_id
+      LEFT JOIN portfolio_holdings ph ON o.instrument_token = ph.instrument_token
       WHERE o.quantity != 0
     `;
 
     const unprocessedOrdersResult = await client.query(unprocessedOrdersQuery);
-    const unprocessedOrders = unprocessedOrdersResult.rows.map((row: any) => row.id);
-
-    // Iterate through unprocessed order IDs and calculate/insert holdings
-    for (const orderID of unprocessedOrders) {
+    const unprocessedInstrumentTokens = unprocessedOrdersResult.rows.map((row: any) => row.instrument_token);
+    // Iterate through unprocessed instrument_tokens and calculate/insert/update holdings
+    for (const instrumentToken of unprocessedInstrumentTokens) {
       // Begin a transaction
       await client.query('BEGIN');
 
-      // Calculate and insert data into holdings table for a specific order_id
-      const insertQuery = `
-        INSERT INTO portfolio_holdings (
-          order_id,
-          average_price,
-          close_price,
-          pnl,
-          day_change,
-          day_change_percentage,
-          created_at
-        )
-        SELECT
-          o.id,
-          -- Replace with your calculation logic for average_price, close_price, pnl, day_change, day_change_percentage
-          AVG(o.price) AS average_price,
-          MAX(o.price) AS close_price,
-          SUM(CASE WHEN o.transaction_type = 'BUY' THEN o.quantity ELSE -o.quantity END * o.price) AS pnl,
-          -- Calculation logic for day_change and day_change_percentage can be placed here
-          0 AS day_change,
-          0 AS day_change_percentage,
-          CURRENT_TIMESTAMP AS created_at
-        FROM
-          orders o
-        WHERE
-          o.id = $1
-        GROUP BY
-          o.id
-      `;
+      // Calculate and insert/update data into holdings table for a specific instrument_token
+      const insertOrUpdateQuery = `
+  INSERT INTO portfolio_holdings (
+    instrument_token,
+    average_price,
+    close_price,
+    pnl,
+    day_change,
+    day_change_percentage,
+    created_at
+  )
+  SELECT
+    o.instrument_token,
+    AVG(o.price) AS average_price,
+    MAX(o.price) AS close_price,
+    SUM(CASE WHEN o.transaction_type = 'BUY' THEN o.quantity ELSE -o.quantity END * o.price) AS pnl,
+    0 AS day_change,
+    0 AS day_change_percentage,
+    CURRENT_TIMESTAMP AS created_at
+  FROM
+    orders o
+  WHERE
+    o.instrument_token = $1
+  GROUP BY
+    o.instrument_token
+  ON CONFLICT (instrument_token)
+  DO UPDATE SET
+    average_price = EXCLUDED.average_price,
+    close_price = EXCLUDED.close_price,
+    pnl = EXCLUDED.pnl,
+    created_at = EXCLUDED.created_at,
+    quantity = portfolio_holdings.quantity + EXCLUDED.quantity;
+`;
 
-      // Execute the insert query with the current order_id
-      await client.query(insertQuery, [orderID]);
+      // Execute the insert/update query with the current instrument_token
+      await client.query(insertOrUpdateQuery, [instrumentToken]);
 
-      // Remove the processed entry from the positions table
+      // Remove the processed entries from the positions table
       const deleteQuery = `
         DELETE FROM portfolio_positions
-        WHERE order_id = $1
+        WHERE order_id IN (
+          SELECT id
+          FROM orders
+          WHERE instrument_token = $1
+        )
       `;
-      await client.query(deleteQuery, [orderID]);
+      await client.query(deleteQuery, [instrumentToken]);
 
       // Commit the transaction
       await client.query('COMMIT');
 
-      console.log(`Holdings calculated and inserted for order_id: ${orderID} successfully. Entry removed from positions.`);
+      console.log(`Holdings calculated and inserted/updated for instrument_token: ${instrumentToken} successfully. Entries removed from positions.`);
     }
 
-    console.log("All unprocessed orders have been handled.");
+    console.log("All unprocessed instrument_tokens have been handled.");
     client.release();
   } catch (error) {
-    console.error('Error processing unprocessed orders:', error);
+    console.error('Error processing unprocessed instrument_tokens:', error);
   }
 };
+

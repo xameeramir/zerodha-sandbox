@@ -95,7 +95,7 @@ async function getDistinctInstrumentTokensForUser(client: any) {
     const userQueryHoldings = await client.query(
       `SELECT DISTINCT orders.instrument_token 
       FROM orders 
-      INNER JOIN portfolio_holdings ON orders.id = portfolio_holdings.order_id`
+      INNER JOIN portfolio_holdings ON orders.instrument_token = portfolio_holdings.instrument_token`
     );
 
     tokens = userQueryHoldings.rows.map((row: any) => row.instrument_token);

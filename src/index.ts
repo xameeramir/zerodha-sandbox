@@ -298,7 +298,8 @@ const createOrdersTable = async (client: any) => {
         await client.query(`
         CREATE TABLE IF NOT EXISTS portfolio_holdings (
           holding_id SERIAL PRIMARY KEY,
-          order_id INTEGER REFERENCES orders(id),
+          instrument_token INTEGER REFERENCES instruments(instrument_token),
+          quantity NUMERIC,
           average_price NUMERIC,
           close_price NUMERIC,
           pnl NUMERIC,
@@ -306,9 +307,12 @@ const createOrdersTable = async (client: any) => {
           day_change_percentage NUMERIC,
           authorised_quantity NUMERIC DEFAULT 0,
           authorised_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT unique_instrument_token UNIQUE (instrument_token)
         )
       `);
+
+
   
         console.log('Portfolio Holdings table created successfully.');
       } else {
