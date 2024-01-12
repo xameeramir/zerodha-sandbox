@@ -69,11 +69,12 @@ function sendPriceUpdates(ws: any) {
   Object.keys(instrumentPrices).forEach((instrumentToken) => {
     const currentPrice = instrumentPrices[instrumentToken].price;
 
-    const response = {
+    const response = [{
       instrument_token: Number(instrumentToken),
       last_price: currentPrice,
-      timestamp: Date.now(),
-    };
+      mode: "ltp",
+      tradable: true
+    }];
 
     // Check if the WebSocket connection is open before sending
     if (ws.readyState === ws.OPEN) {
