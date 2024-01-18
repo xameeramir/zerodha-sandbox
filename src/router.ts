@@ -63,6 +63,8 @@ interface InstrumentPrice {
 interface InstrumentPrices {
   [key: string]: InstrumentPrice;
 }
+
+let tokensFromWebhook: any[] = []; 
 const instrumentPrices: InstrumentPrices = {};
 let isServerRunning = false; // Flag to track server status
 function sendPriceUpdates(ws: any) {
@@ -112,9 +114,9 @@ export async function startWebSocketServer() {
   wss = new WebSocket.Server({ port: 8082 });
   wss.setMaxListeners(MAX_LISTENERS);
   const checkDistinctTokens = async () => {
-    const distinctTokens = await getDistinctInstrumentTokensForUser(client);
+    const distinctDbTokens = await getDistinctInstrumentTokensForUser(client);
+    const distinctTokens = [...distinctDbTokens, ...tokensFromWebhook];
     if (!distinctTokens || distinctTokens.length === 0) {
-      // Retry after 2 second if distinct tokens are not found or length is 0
       retryInterval = setTimeout(checkDistinctTokens, 2000);
     } else {
       // Once distinct tokens are available, clear the retry interval
@@ -343,5 +345,23 @@ export const router = (server: any) => {
       res.status(200).json({ status: false, message: "WebSocket server is not active" });
     }
   });
+  // POST route to add distinct tokens
+  server.post('/send-tokens', (req: any, res: any) => {
+    const { tokens } = req.body;
+
+    if (typeof tokens === 'string') {
+      // Parse the stringified JSON into an array
+      const tokensArray = JSON.parse(tokens);
+      console.log(tokensArray)
+      if (Array.isArray(tokensArray) && tokensArray.length > 0) {
+        tokensFromWebhook.push(...tokensArray);
+        res.status(200).json({ success: true, message: 'Tokens added successfully' });
+        return;
+      }
+    }
+    res.status(400).json({ success: false, message: 'Invalid or empty tokens array in the request body' });
+  });
   startWebSocketServer();
+
 };
+
