@@ -123,7 +123,21 @@ export async function startWebSocketServer() {
       clearTimeout(retryInterval);
       wss.on("connection", (ws: any) => {
         ws.on("message", (message: any) => {
-          console.log("Received message:", message);
+          const parsedMessage = JSON.parse(message);
+          if (parsedMessage.subscribe !== undefined && parsedMessage.tokens !== undefined) {
+            if (parsedMessage.subscribe) {
+              tokensFromWebhook.push(parsedMessage.tokens)
+              console.log("Subscribe request received for tokens:", parsedMessage.tokens);
+            } else {
+              const index = tokensFromWebhook.indexOf(parsedMessage.tokens);
+              if (index !== -1) {
+                tokensFromWebhook.splice(index, 1);
+                console.log("Unsubscribe request received for tokens:", parsedMessage.tokens);
+              } else {
+                console.log("Token not found for unsubscribe:", parsedMessage.tokens);
+              }
+            }
+          }
         });
 
         ws.on("close", () => {
@@ -345,14 +359,11 @@ export const router = (server: any) => {
       res.status(200).json({ status: false, message: "WebSocket server is not active" });
     }
   });
-  // POST route to add distinct tokens
-  server.post('/send-tokens', (req: any, res: any) => {
+  server.post('/add-tokens', (req: any, res: any) => {
     const { tokens } = req.body;
 
     if (typeof tokens === 'string') {
-      // Parse the stringified JSON into an array
       const tokensArray = JSON.parse(tokens);
-      console.log(tokensArray)
       if (Array.isArray(tokensArray) && tokensArray.length > 0) {
         tokensFromWebhook.push(...tokensArray);
         res.status(200).json({ success: true, message: 'Tokens added successfully' });
@@ -362,6 +373,5 @@ export const router = (server: any) => {
     res.status(400).json({ success: false, message: 'Invalid or empty tokens array in the request body' });
   });
   startWebSocketServer();
-
 };
 
