@@ -115,29 +115,36 @@ export async function startWebSocketServer() {
   wss.setMaxListeners(MAX_LISTENERS);
   const checkDistinctTokens = async () => {
     const distinctDbTokens = await getDistinctInstrumentTokensForUser(client);
-    const distinctTokens = [...distinctDbTokens, ...tokensFromWebhook];
+    const distinctTokensSet = new Set([...distinctDbTokens, ...tokensFromWebhook]);
+    const distinctTokens = [...distinctTokensSet];
+    console.log(distinctTokens)
     if (!distinctTokens || distinctTokens.length === 0) {
-      retryInterval = setTimeout(checkDistinctTokens, 2000);
+      retryInterval = setTimeout(checkDistinctTokens, 10000);
     } else {
       // Once distinct tokens are available, clear the retry interval
       clearTimeout(retryInterval);
       wss.on("connection", (ws: any) => {
+        
         ws.on("message", (message: any) => {
           const parsedMessage = JSON.parse(message);
           if (parsedMessage.subscribe !== undefined && parsedMessage.tokens !== undefined) {
             if (parsedMessage.subscribe) {
-              tokensFromWebhook.push(parsedMessage.tokens)
-              console.log("Subscribe request received for tokens:", parsedMessage.tokens);
+                // Subscribe
+                tokensFromWebhook.push(...parsedMessage.tokens);
+                console.log("Subscribe request received for tokens:", parsedMessage.tokens);
             } else {
-              const index = tokensFromWebhook.indexOf(parsedMessage.tokens);
-              if (index !== -1) {
-                tokensFromWebhook.splice(index, 1);
-                console.log("Unsubscribe request received for tokens:", parsedMessage.tokens);
-              } else {
-                console.log("Token not found for unsubscribe:", parsedMessage.tokens);
-              }
+                // Unsubscribe
+                parsedMessage.tokens.forEach((token: number) => {
+                    const index = tokensFromWebhook.indexOf(token);
+                    if (index !== -1) {
+                        tokensFromWebhook.splice(index, 1);
+                        console.log("Unsubscribe request received for token:", token);
+                    } else {
+                        console.log("Token not found for unsubscribe:", token);
+                    }
+                });
             }
-          }
+        }
         });
 
         ws.on("close", () => {
@@ -180,7 +187,6 @@ export async function startWebSocketServer() {
                   increasing = true; // Change direction to increase
                 }
               }
-
               // Send price updates to all connected clients
               wss.clients.forEach((client: any) => {
                 if (client.readyState === client.OPEN) {
@@ -361,7 +367,6 @@ export const router = (server: any) => {
   });
   server.post('/add-tokens', (req: any, res: any) => {
     const { tokens } = req.body;
-
     if (typeof tokens === 'string') {
       const tokensArray = JSON.parse(tokens);
       if (Array.isArray(tokensArray) && tokensArray.length > 0) {
@@ -373,5 +378,6 @@ export const router = (server: any) => {
     res.status(400).json({ success: false, message: 'Invalid or empty tokens array in the request body' });
   });
   startWebSocketServer();
+
 };
 
