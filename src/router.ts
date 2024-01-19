@@ -114,9 +114,11 @@ export async function startWebSocketServer() {
   wss = new WebSocket.Server({ port: 8082 });
   wss.setMaxListeners(MAX_LISTENERS);
   const checkDistinctTokens = async () => {
-    const distinctDbTokens = await getDistinctInstrumentTokensForUser(client);
-    const distinctTokensSet = new Set([...distinctDbTokens, ...tokensFromWebhook]);
-    const distinctTokens = [...distinctTokensSet];
+    const distinctDbTokens: number[] = await getDistinctInstrumentTokensForUser(client);
+    const numericDbTokens: number[] = distinctDbTokens.filter((token: number) => typeof token === 'number');
+    const numericWebhookTokens: number[] = tokensFromWebhook.filter((token: number) => typeof token === 'number');
+    const distinctTokensSet: Set<number> = new Set([...numericDbTokens, ...numericWebhookTokens]);
+    const distinctTokens: number[] = [...distinctTokensSet];
     console.log(distinctTokens)
     if (!distinctTokens || distinctTokens.length === 0) {
       retryInterval = setTimeout(checkDistinctTokens, 10000);
@@ -170,7 +172,7 @@ export async function startWebSocketServer() {
         if (!instrumentPrices[instrument_token]) {
           let increasing = true;
           let min_price = 10;
-          let max_price = 15;
+          let max_price = 30;
           instrumentPrices[instrument_token] = {
             price: min_price, // Initial price
             interval: setInterval(() => {
