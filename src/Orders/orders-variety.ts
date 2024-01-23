@@ -310,7 +310,12 @@ try {
 function sendPostbackUpdate(payload: any) {
   // Your API endpoint URL
   const apiUrl = postback_url
-  axios.post(apiUrl, payload)
+  const headers = {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  };
+  axios.post(apiUrl,  JSON.stringify(payload), headers)
     .then((response: { data: any; }) => {
       console.log('Postback sent successfully:', response.data);
     })
