@@ -64,7 +64,7 @@ interface InstrumentPrices {
   [key: string]: InstrumentPrice;
 }
 
-let tokensFromWebhook: any[] = []; 
+let tokensFromWebhook: any[] = [];
 const instrumentPrices: InstrumentPrices = {};
 let isServerRunning = false; // Flag to track server status
 function sendPriceUpdates(ws: any) {
@@ -110,95 +110,104 @@ async function getDistinctInstrumentTokensForUser(client: any) {
 export async function startWebSocketServer() {
   let retryInterval: any;
   const MAX_LISTENERS = 300;
-  const client = await pool.connect();
   wss = new WebSocket.Server({ port: 8082 });
   wss.setMaxListeners(MAX_LISTENERS);
   const checkDistinctTokens = async () => {
-    const distinctDbTokens: number[] = await getDistinctInstrumentTokensForUser(client);
-    const numericDbTokens: number[] = distinctDbTokens.filter((token: number) => typeof token === 'number');
-    const numericWebhookTokens: number[] = tokensFromWebhook.filter((token: number) => typeof token === 'number');
-    const distinctTokensSet: Set<number> = new Set([...numericDbTokens, ...numericWebhookTokens]);
-    const distinctTokens: number[] = [...distinctTokensSet];
-    console.log(distinctTokens)
-    if (!distinctTokens || distinctTokens.length === 0) {
-      retryInterval = setTimeout(checkDistinctTokens, 10000);
-    } else {
-      // Once distinct tokens are available, clear the retry interval
-      clearTimeout(retryInterval);
-      wss.on("connection", (ws: any) => {
-        
-        ws.on("message", (message: any) => {
-          const parsedMessage = JSON.parse(message);
-          if (parsedMessage.subscribe !== undefined && parsedMessage.tokens !== undefined) {
-            if (parsedMessage.subscribe) {
+    let client;
+    try {
+      client = await pool.connect();
+      const distinctDbTokens: number[] = await getDistinctInstrumentTokensForUser(client);
+      const numericDbTokens: number[] = distinctDbTokens.filter((token: number) => typeof token === 'number');
+      const numericWebhookTokens: number[] = tokensFromWebhook.filter((token: number) => typeof token === 'number');
+      const distinctTokensSet: Set<number> = new Set([...numericDbTokens, ...numericWebhookTokens]);
+      const distinctTokens: number[] = [...distinctTokensSet];
+      console.log(distinctTokens)
+      if (!distinctTokens || distinctTokens.length === 0) {
+        retryInterval = setTimeout(checkDistinctTokens, 10000);
+      } else {
+        // Once distinct tokens are available, clear the retry interval
+        clearTimeout(retryInterval);
+        wss.on("connection", (ws: any) => {
+
+          ws.on("message", (message: any) => {
+            const parsedMessage = JSON.parse(message);
+            if (parsedMessage.subscribe !== undefined && parsedMessage.tokens !== undefined) {
+              if (parsedMessage.subscribe) {
                 // Subscribe
                 tokensFromWebhook.push(...parsedMessage.tokens);
                 console.log("Subscribe request received for tokens:", parsedMessage.tokens);
-            } else {
+              } else {
                 // Unsubscribe
                 parsedMessage.tokens.forEach((token: number) => {
-                    const index = tokensFromWebhook.indexOf(token);
-                    if (index !== -1) {
-                        tokensFromWebhook.splice(index, 1);
-                        console.log("Unsubscribe request received for token:", token);
-                    } else {
-                        console.log("Token not found for unsubscribe:", token);
-                    }
+                  const index = tokensFromWebhook.indexOf(token);
+                  if (index !== -1) {
+                    tokensFromWebhook.splice(index, 1);
+                    console.log("Unsubscribe request received for token:", token);
+                  } else {
+                    console.log("Token not found for unsubscribe:", token);
+                  }
                 });
-            }
-        }
-        });
-
-        ws.on("close", () => {
-          console.log("Client disconnected");
-          ws.removeAllListeners();
-        });
-
-        // Send current instrument prices to the newly connected client
-        sendPriceUpdates(ws);
-      });
-
-      wss.on("listening", () => {
-        isServerRunning = true;
-      });
-
-      wss.on("close", () => {
-        isServerRunning = false;
-      });
-
-      // Process distinct tokens
-      distinctTokens.forEach((instrument: any) => {
-        const instrument_token = instrument;
-        if (!instrumentPrices[instrument_token]) {
-          let increasing = true;
-          let min_price = 10;
-          let max_price = 30;
-          instrumentPrices[instrument_token] = {
-            price: min_price, // Initial price
-            interval: setInterval(() => {
-              if (increasing) {
-                if (instrumentPrices[instrument_token].price < max_price) {
-                  instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
-                } else {
-                  increasing = false; // Change direction to decrease
-                }
-              } else {
-                if (instrumentPrices[instrument_token].price > min_price) {
-                  instrumentPrices[instrument_token].price -= 0.1; // Decrement price by 0.1
-                } else {
-                  increasing = true; // Change direction to increase
-                }
               }
-              // Send price updates to all connected clients
-              wss.clients.forEach((client: any) => {
-                if (client.readyState === client.OPEN) {
-                  sendPriceUpdates(client);
+            }
+          });
+
+          ws.on("close", () => {
+            console.log("Client disconnected");
+            ws.removeAllListeners();
+          });
+
+          // Send current instrument prices to the newly connected client
+          sendPriceUpdates(ws);
+        });
+
+        wss.on("listening", () => {
+          isServerRunning = true;
+        });
+
+        wss.on("close", () => {
+          isServerRunning = false;
+        });
+
+        // Process distinct tokens
+        distinctTokens.forEach((instrument: any) => {
+          const instrument_token = instrument;
+          if (!instrumentPrices[instrument_token]) {
+            let increasing = true;
+            let min_price = 10;
+            let max_price = 30;
+            instrumentPrices[instrument_token] = {
+              price: min_price, // Initial price
+              interval: setInterval(() => {
+                if (increasing) {
+                  if (instrumentPrices[instrument_token].price < max_price) {
+                    instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
+                  } else {
+                    increasing = false; // Change direction to decrease
+                  }
+                } else {
+                  if (instrumentPrices[instrument_token].price > min_price) {
+                    instrumentPrices[instrument_token].price -= 0.1; // Decrement price by 0.1
+                  } else {
+                    increasing = true; // Change direction to increase
+                  }
                 }
-              });
-            }, 1000), // 1 second interval
-          };
-        }
-      });
+                // Send price updates to all connected clients
+                wss.clients.forEach((client: any) => {
+                  if (client.readyState === client.OPEN) {
+                    sendPriceUpdates(client);
+                  }
+                });
+              }, 1000),
+            };
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error in checkDistinctTokens:', error);
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
   };
 
@@ -231,7 +240,7 @@ export async function restartWebSocketServer() {
         console.log("WebSocket server restarted successfully");
       });
     } else {
-      console.error("WebSocket server is not active" );
+      console.error("WebSocket server is not active");
     }
   } else {
     startWebSocketServer();
@@ -326,7 +335,7 @@ export const router = (server: any) => {
             console.error("Error closing WebSocket server:", err);
             return res.status(500).json({ message: "Error stopping WebSocket server" });
           }
-  
+
           wss = undefined;
           clearIntervalAllInstruments();
           startWebSocketServer();
@@ -341,7 +350,7 @@ export const router = (server: any) => {
       return res.status(200).json({ message: "WebSocket server started successfully" });
     }
   });
-  
+
   server.get("/stop-websocket", function (req: any, res: any) {
     if (wss) {
       wss.close((err: any) => {
@@ -349,7 +358,7 @@ export const router = (server: any) => {
           console.error("Error closing WebSocket server:", err);
           res.status(500).json({ message: "Error stopping WebSocket server" });
         } else {
-          wss = undefined; 
+          wss = undefined;
           clearIntervalAllInstruments();
           res
             .status(200)

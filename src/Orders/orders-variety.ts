@@ -35,7 +35,6 @@ export const POSTOrderVariety = async (request: any, response: any) => {
         "status": "error",
         "message": "Unauthorized access",
       });
-      ;
       return;
     }
     const {
@@ -263,7 +262,7 @@ try {
       "order_id": orderId,
       "exchange_order_id": orderDetails.exchange_order_id,
       "parent_order_id": orderDetails.parent_order_id,
-      "status": "COMPLETED",
+      "status": "COMPLETE",
       "status_message": orderDetails.status_message,
       "order_timestamp": orderDetails.order_timestamp,
       "exchange_update_timestamp": orderDetails.exchange_timestamp,
