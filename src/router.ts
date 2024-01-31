@@ -111,110 +111,123 @@ export async function startWebSocketServer() {
   let retryInterval: any;
   const MAX_LISTENERS = 300;
   wss = new WebSocket.Server({ port: 8082 });
+  const connectedClients = new Set();
   wss.setMaxListeners(MAX_LISTENERS);
-  const checkDistinctTokens = async () => {
-    let client;
-    try {
-      client = await pool.connect();
-      const distinctDbTokens: number[] = await getDistinctInstrumentTokensForUser(client);
-      const numericDbTokens: number[] = distinctDbTokens.filter((token: number) => typeof token === 'number');
-      const numericWebhookTokens: number[] = tokensFromWebhook.filter((token: number) => typeof token === 'number');
-      const distinctTokensSet: Set<number> = new Set([...numericDbTokens, ...numericWebhookTokens]);
-      const distinctTokens: number[] = [...distinctTokensSet];
-      console.log(distinctTokens)
-      if (!distinctTokens || distinctTokens.length === 0) {
-        retryInterval = setTimeout(checkDistinctTokens, 10000);
-      } else {
-        // Once distinct tokens are available, clear the retry interval
-        clearTimeout(retryInterval);
-        wss.on("connection", (ws: any) => {
 
-          ws.on("message", (message: any) => {
-            const parsedMessage = JSON.parse(message);
-            if (parsedMessage.subscribe !== undefined && parsedMessage.tokens !== undefined) {
-              if (parsedMessage.subscribe) {
-                // Subscribe
-                tokensFromWebhook.push(...parsedMessage.tokens);
-                console.log("Subscribe request received for tokens:", parsedMessage.tokens);
-              } else {
-                // Unsubscribe
-                parsedMessage.tokens.forEach((token: number) => {
-                  const index = tokensFromWebhook.indexOf(token);
-                  if (index !== -1) {
-                    tokensFromWebhook.splice(index, 1);
-                    console.log("Unsubscribe request received for token:", token);
-                  } else {
-                    console.log("Token not found for unsubscribe:", token);
-                  }
-                });
-              }
+  const sendPriceUpdatesToAllClients = () => {
+    wss.clients.forEach((client: any) => {
+      if (client.readyState === client.OPEN) {
+        sendPriceUpdates(client);
+      }
+    });
+  };
+
+  const handleClientConnection = (ws: any) => {
+    if (connectedClients.has(ws)) {
+      console.log("Duplicate connection detected. Closing connection.");
+      return ws.close();
+    }
+
+    connectedClients.add(ws);
+
+    ws.on("message", (message: any) => {
+      const parsedMessage = JSON.parse(message);
+      if (parsedMessage.subscribe !== undefined && parsedMessage.tokens !== undefined) {
+        if (parsedMessage.subscribe) {
+          tokensFromWebhook.push(...parsedMessage.tokens);
+          console.log("Subscribe request received for tokens:", parsedMessage.tokens);
+        } else {
+          parsedMessage.tokens.forEach((token: any) => {
+            const index = tokensFromWebhook.indexOf(token);
+            if (index !== -1) {
+              tokensFromWebhook.splice(index, 1);
+              console.log("Unsubscribe request received for token:", token);
+            } else {
+              console.log("Token not found for unsubscribe:", token);
             }
           });
+        }
+      }
+    });
 
-          ws.on("close", () => {
-            console.log("Client disconnected");
-            ws.removeAllListeners();
-          });
+    ws.on("close", () => {
+      connectedClients.delete(ws);
+      console.log("Client disconnected");
+      isServerRunning = false;
+    });
 
-          // Send current instrument prices to the newly connected client
-          sendPriceUpdates(ws);
-        });
+    sendPriceUpdates(ws);
+  };
 
-        wss.on("listening", () => {
-          isServerRunning = true;
-        });
+  wss.on("connection", handleClientConnection);
 
-        wss.on("close", () => {
-          isServerRunning = false;
-        });
-
+  wss.on("listening", () => {
+    isServerRunning = true;
+  });
+  // Create a common pool connection
+  let client: any;
+  try {
+    client = await pool.connect();
+  } catch (error) {
+    console.error('Error establishing a common pool connection:', error);
+  }
+  const checkDistinctTokens = async (client: any) => {
+    try {
+      const distinctDbTokens = await getDistinctInstrumentTokensForUser(client);
+      const numericDbTokens = distinctDbTokens.filter((token: any) => typeof token === "number");
+      const numericWebhookTokens = tokensFromWebhook.filter((token) => typeof token === "number");
+      const distinctTokensSet = new Set([...numericDbTokens, ...numericWebhookTokens]);
+      const distinctTokens = [...distinctTokensSet];
+  
+      console.log(distinctTokens);
+  
+      if (!distinctTokens || distinctTokens.length === 0) {
+        retryInterval = setInterval(() => checkDistinctTokens(client), 10000);
+      } else {
+        clearTimeout(retryInterval);
         // Process distinct tokens
-        distinctTokens.forEach((instrument: any) => {
+        distinctTokens.forEach((instrument) => {
           const instrument_token = instrument;
           if (!instrumentPrices[instrument_token]) {
             let increasing = true;
             let min_price = 10;
             let max_price = 30;
             instrumentPrices[instrument_token] = {
-              price: min_price, // Initial price
+              price: min_price,
               interval: setInterval(() => {
                 if (increasing) {
                   if (instrumentPrices[instrument_token].price < max_price) {
-                    instrumentPrices[instrument_token].price += 0.1; // Increment price by 0.1
+                    instrumentPrices[instrument_token].price += 0.1;
                   } else {
-                    increasing = false; // Change direction to decrease
+                    increasing = false;
                   }
                 } else {
                   if (instrumentPrices[instrument_token].price > min_price) {
-                    instrumentPrices[instrument_token].price -= 0.1; // Decrement price by 0.1
+                    instrumentPrices[instrument_token].price -= 0.1;
                   } else {
-                    increasing = true; // Change direction to increase
+                    increasing = true;
                   }
                 }
-                // Send price updates to all connected clients
-                wss.clients.forEach((client: any) => {
-                  if (client.readyState === client.OPEN) {
-                    sendPriceUpdates(client);
-                  }
-                });
-              }, 1000),
+                // Round off to the last 2 decimal places
+                instrumentPrices[instrument_token].price = parseFloat(instrumentPrices[instrument_token].price.toFixed(2));
+                sendPriceUpdatesToAllClients();
+              }, 2000),
             };
           }
         });
       }
     } catch (error) {
-      console.error('Error in checkDistinctTokens:', error);
+      console.error("Error in checkDistinctTokens:", error);
     } finally {
       if (client) {
-        client.release();
+        console.log("Finally called");
       }
     }
   };
-
-  const interval = setInterval(async () => {
-    await checkDistinctTokens();
-  }, 10000); //  10 seconds check
+  
+  const interval = setInterval(() => checkDistinctTokens(client), 10000);
 }
+
 // Function to clear all intervals related to instruments
 export function clearIntervalAllInstruments() {
   Object.keys(instrumentPrices).forEach(function (instrument_token) {
