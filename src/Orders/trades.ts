@@ -1,24 +1,30 @@
+const faker = require('faker');
+
+// Function to generate random trade data
+const generateRandomTradeData = (): any[] => {
+  const data = [{
+    trade_id: faker.datatype.number().toString(),
+    order_id: faker.datatype.number().toString(),
+    exchange_order_id: faker.datatype.number().toString(),
+    tradingsymbol: faker.random.alphaNumeric(6),
+    exchange: 'NSE',
+    instrument_token: faker.datatype.number().toString(),
+    transaction_type: 'BUY',
+    product: 'MIS',
+    average_price: parseFloat(faker.finance.amount()),
+    quantity: faker.datatype.number(),
+    fill_timestamp: faker.date.past().toISOString(),
+    exchange_timestamp: faker.date.past().toISOString()
+  }];
+  
+  return data;
+};
+
+// Function to handle GET request for GETTrades
 export const GETTrades = (request: any, response: any) => {
-    response.status(200).jsonp({
-        "COLLABORATION-NEEDED": "Please contibute the request body handling logic https://github.com/nordible/zerodha-sandbox/pulls",
-        "status": "success",
-        "data": [{
-            "trade_id": "159918",
-            "order_id": "151220000000000",
-            "exchange_order_id": "511220371736111",
-    
-            "tradingsymbol": "ACC",
-            "exchange": "NSE",
-            "instrument_token": "22",
-    
-            "transaction_type": "BUY",
-            "product": "MIS",
-            "average_price": 100.98,
-            "quantity": 10,
-    
-            "fill_timestamp": "2015-12-20 15:01:44",
-            "exchange_timestamp": "2015-12-20 15:01:43"
-    
-        }]
-    });
-}
+  const randomTradeData = generateRandomTradeData();
+  response.status(200).jsonp({
+    "status": "success",
+    "data": randomTradeData,
+  });
+};

@@ -1,76 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <title>Zerodha APIs Test environment by nordible</title>
+  <title>Zerodha APIs Test environment</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" integrity="sha512-b2QcS5SsA8tZodcDtGRELiGv5SaKSk1vDHDaQRda0htPYWZ6046lr3kJ5bAAQdpV2mmA/4v0wQF9MyU6/pDIAg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.min.js" integrity="sha512-WW8/jxkELe2CAiE4LvQfwm1rajOS8PHasCCx+knHG0gBHt8EXxS6T6tJRTGuDQVnluuAvMxWF4j8SNFDKceLFg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
+
 <body>
-
-<div class="jumbotron text-center">
-  <h2>Zerodha APIs Test environment</h2>
-  <p>Free sandbox for testing Zerodha's <a href="https://kite.trade/docs/connect/v3">Kite and Coin APIs</a></p> 
-  APIs are mocked at this root URL <code>https://zerodha-sandbox.herokuapp.com/</code>
-</div>
-  
-<div class="container">
-  <div class="row">
-    <div class="col-sm-4">
-      <h3>v3 APIs</h3>
-      <p><a href="https://kite.trade/docs/connect/v3/">All the v3 API</a> mocks available*</p>      
-    </div>
-    <div class="col-sm-4">
-      <h3>Endpoint</h3>
-      <p>Replace <a href="https://kite.trade/docs/connect/v3/#root-api-endpoint">the API endpoint</a> to <code>https://zerodha-sandbox.herokuapp.com/</code> </p>
-    </div>
-    <div class="col-sm-4">
-      <h3>Free</h3>        
-      <p>No need of any paid API keys</p>
-    </div>
+  <div class="jumbotron text-center">
+    <h2>Zerodha APIs Test environment</h2>
+    <p>Free sandbox for testing Zerodha's <a href="https://kite.trade/docs/connect/v3">Kite and Coin APIs</a></p>
   </div>
+  <style>
+  .instrument-field {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
 
-  <div class="row">
-    <div class="col-sm-4">
-      <h3>Open source</h3>
-      <p>The APIs are <a href="https://github.com/nordible/zerodha-sandbox">open source</a></p>      
-    </div>
-    <div class="col-sm-4">
-      <h3>Contribute</h3>
-      <p><a href="https://github.com/nordible/zerodha-sandbox/pulls">Contributions</a> are most welcome!</p>
-    </div>
-    <div class="col-sm-4">
-      <h3>Coffee</h3>        
-      <p>We love <a href="https://www.buymeacoffee.com/nordible"> coffee</a></p>
-    </div>
+  .instrument-field input {
+    flex: 1;
+    margin-right: 5px;
+  }
+  .card-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .card-body {
+      text-align: center;
+    }
+
+    .glow-ball {
+      /* Existing styles for the glow indicator */
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-left: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      transition: background-color 0.3s ease-in-out;
+    }
+    .glow-ball.glowing {
+      animation: blinkGlow 1s infinite;
+    }
+
+    @keyframes blinkGlow {
+      0% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+
+  .btn-group {
+    display: inline-block; 
+    margin-bottom: 10px; 
+  }
+  </style>
+  <div class="container mt-4">
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-body">
+              <form id="instrumentForm" class="d-flex flex-wrap align-items-center">
+                <button type="submit" class="btn btn-success me-2 mb-2" id="startWebhook">Start Webhook</button>
+                <button type="button" class="btn btn-danger me-2 mb-2" id="stopWebhook" style="display: none;">Stop Webhook</button>
+                <button type="button" class="btn btn-primary mb-2" id="restartWebsocket">Restart WebSocket</button>
+                <div class="glow-ball ms-2 mb-2" id="websocketStatus"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    <div id="responseMessage" style="display: none;"></div>
   </div>
-
-  <div class="row">
-    <div class="col-sm-4">
-      <h3>Run locally</h3>
-      <p>You can run it like any npm project</p>      
-    </div>
-    <div class="col-sm-4">
-      <h3>Slow?</h3>
-      <p>Your very first request will be slow. Be patient!</p>
-    </div>
-    <div class="col-sm-4">
-      <h3>Collab request</h3>        
-      <p><code>COLLABORATION-NEEDED</code> is our extra key to indicate collaborations needs :)</a></p>
-    </div>
-  </div>
-
   <footer>&copy; <a href="https://nordible.com/">nordible</a></footer>
-</div>
+  </div>
+  <script>
+    document.getElementById('startWebhook').addEventListener('click', async function () {
+      try {
+        const response = await fetch(window.location.origin + '/start-websocket', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (response.ok) {
+          document.getElementById('responseMessage').innerText = 'WebSocket server started successfully';
+          document.getElementById('responseMessage').className = 'alert alert-success';
+          document.getElementById('startWebhook').style.display = 'none';
+          document.getElementById('stopWebhook').style.display = 'block';
+        } else {
+          throw new Error('Failed to start WebSocket server');
+        }
+
+        const responseData = await response.json();
+        console.log('Response:', responseData);
+      } catch (error) {
+        document.getElementById('responseMessage').innerText = 'Failed to start WebSocket server';
+        document.getElementById('responseMessage').className = 'alert alert-danger';
+        document.getElementById('responseMessage').style.display = 'block';
+        return; // Exit the function in case of an error to prevent further execution
+      }
+
+      // Display the response message block after successful execution (if no error occurred)
+      document.getElementById('responseMessage').style.display = 'block';
+    });
+    // Function to periodically check WebSocket status
+    async function checkWebSocketStatus() {
+    try {
+      const response = await fetch(`${window.location.origin}/check-websocket`);
+      const { status } = await response.json();
+      const statusDiv = document.getElementById('websocketStatus');
+      
+      if (status) {
+        statusDiv.style.backgroundColor = 'green';
+        document.getElementById('startWebhook').style.display = 'none';
+        document.getElementById('stopWebhook').style.display = 'block';
+        statusDiv.classList.add('glowing');
+      } else {
+        statusDiv.style.backgroundColor = 'red';
+        document.getElementById('startWebhook').style.display = 'block';
+        document.getElementById('stopWebhook').style.display = 'none';
+        statusDiv.classList.remove('glowing');
+      }
+    } catch (error) {
+      console.error('Error while checking WebSocket status:', error);
+    }
+  }
+  setInterval(checkWebSocketStatus, 2000);
+
+    // Event listener for Restart WebSocket button
+    document.getElementById('restartWebsocket').addEventListener('click', async function () {
+      try {
+        const response = await fetch(`${window.location.origin}/restart-websocket`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to start WebSocket server');
+        }
+      } catch (error) {
+        console.error('Failed to start WebSocket server:', error);
+      }
+    });
+
+    // Event listener for stopping the WebSocket
+    document.getElementById('stopWebhook').addEventListener('click', async function () {
+      try {
+        const response = await fetch(`${window.location.origin}/stop-websocket`, {
+          method: 'GET',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to stop WebSocket server');
+        }
+      } catch (error) {
+        console.error('Failed to stop WebSocket server:', error);
+      }
+    });
+  </script>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-109226220-1"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+    gtag('config', 'UA-109226220-1');
+  </script>
 </body>
-<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-109226220-1"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-109226220-1');
-</script>
+
 </html>
